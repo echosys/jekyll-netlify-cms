@@ -18,5 +18,9 @@ collections:
       - {label: "Title", name: "title", widget: "string", tagname: "h1"}
       - {label: "Body", name: "body", widget: "markdown"}
       - {label: "Categories", name: "categories", widget: "string", required: false}
-    meta:
-      - {label: "Publish Date", name: "date", widget: "datetime", format: "YYYY-MM-DD hh:mm:ss"}
+    meta:  # This should be an object, not an array
+          description: "Meta description for posts"
+          publishDate:
+            label: "Publish Date"
+            widget: "datetime"
+            format: "YYYY-MM-DD hh:mm:ss"
