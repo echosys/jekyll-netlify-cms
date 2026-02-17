@@ -6,7 +6,7 @@ import { ArrowLeft, Save, Upload, Tags, X, CheckCircle2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 
-const CHUNK_SIZE = 1024 * 1024 * 3; // 3MB Chunks (Multiple of 3 to avoid b64 padding)
+const CHUNK_SIZE = 1024 * 1024 * 2; // 2MB Chunks (Safer for Vercel's 4.5MB limit)
 
 export default function EditPost() {
     const [post, setPost] = useState<any>(null);
@@ -39,11 +39,14 @@ export default function EditPost() {
         setFileName(file ? file.name : null);
     };
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
         if (isSubmitting) return;
+
+        const formData = new FormData(e.currentTarget);
         setIsSubmitting(true);
         setUploadProgress(0);
-        setUploadStatus("Starting update...");
+        setUploadStatus("Updating post info...");
 
         try {
             const title = formData.get("title") as string;
@@ -72,14 +75,17 @@ export default function EditPost() {
                     const end = Math.min(start + CHUNK_SIZE, file.size);
                     const chunk = file.slice(start, end);
 
+                    setUploadStatus(`Processing chunk ${i + 1} of ${totalChunks}...`);
+
                     // Convert chunk to base64
                     const reader = new FileReader();
-                    const base64Promise = new Promise<string>((resolve) => {
+                    const base64Promise = new Promise<string>((resolve, reject) => {
                         reader.onload = () => {
                             const result = reader.result as string;
                             const base64 = result.split(",")[1];
                             resolve(base64);
                         };
+                        reader.onerror = () => reject(new Error("Failed to read file chunk"));
                         reader.readAsDataURL(chunk);
                     });
 
@@ -126,25 +132,34 @@ export default function EditPost() {
 
     return (
         <div className="max-w-2xl mx-auto">
-            {/* Progress Banner */}
+            {/* Progress Overlay & Banner */}
             {isSubmitting && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md">
-                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-2xl space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400 flex items-center gap-2">
-                                {uploadProgress === 100 ? <CheckCircle2 size={16} className="text-teal-400" /> : <div className="w-3 h-3 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />}
-                                {uploadStatus}
-                            </span>
-                            <span className="text-teal-400 font-bold">{uploadedMB}MB / {totalMB}MB ({uploadProgress}%)</span>
-                        </div>
-                        <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
-                            <div
-                                className="bg-gradient-to-r from-teal-500 to-blue-500 h-full transition-all duration-300"
-                                style={{ width: `${uploadProgress}%` }}
-                            />
+                <>
+                    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[49]" />
+                    <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md">
+                        <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl space-y-4 ring-1 ring-white/10 animate-in fade-in zoom-in duration-200">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-200 flex items-center gap-3">
+                                    {uploadProgress === 100 && uploadStatus === 'Done!' ? (
+                                        <CheckCircle2 size={20} className="text-teal-400" />
+                                    ) : (
+                                        <div className="w-4 h-4 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+                                    )}
+                                    <span className="font-medium">{uploadStatus}</span>
+                                </span>
+                                <span className="text-teal-400 font-bold tabular-nums">
+                                    {uploadedMB}MB / {totalMB}MB ({uploadProgress}%)
+                                </span>
+                            </div>
+                            <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
+                                <div
+                                    className="bg-gradient-to-r from-teal-500 via-teal-400 to-blue-500 h-full transition-all duration-300 ease-out shadow-[0_0_10px_rgba(20,184,166,0.3)]"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
 
             <div className="mb-8">
@@ -155,7 +170,7 @@ export default function EditPost() {
 
             <h2 className="text-3xl font-bold mb-8">Edit Post</h2>
 
-            <form action={handleSubmit} className="space-y-6 bg-slate-900/50 p-8 rounded-2xl border border-slate-800">
+            <form onSubmit={handleSubmit} className="space-y-6 bg-slate-900/50 p-8 rounded-2xl border border-slate-800 relative transition-opacity duration-300">
                 <div className="space-y-2">
                     <label htmlFor="title" className="text-sm font-medium text-slate-400">Title</label>
                     <input
