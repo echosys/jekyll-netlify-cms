@@ -13,6 +13,8 @@ export default function NewPost() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+    const [uploadedMB, setUploadedMB] = useState(0);
+    const [totalMB, setTotalMB] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
@@ -43,6 +45,8 @@ export default function NewPost() {
 
                 // 2. Chunked Upload
                 const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                setTotalMB(Number((file.size / (1024 * 1024)).toFixed(1)));
+                setUploadedMB(0);
 
                 for (let i = 0; i < totalChunks; i++) {
                     const start = i * CHUNK_SIZE;
@@ -67,7 +71,10 @@ export default function NewPost() {
                     // Use FormData to bypass RSC string serialization limits/nesting errors
                     const chunkFormData = new FormData();
                     chunkFormData.append("chunk", base64Data);
-                    await uploadChunk(postId, chunkFormData);
+                    await uploadChunk(postId, chunkFormData, i);
+
+                    const currentUploadedMB = Number(((i + 1) * CHUNK_SIZE / (1024 * 1024)).toFixed(1));
+                    setUploadedMB(Math.min(currentUploadedMB, totalMB));
 
                     const progress = Math.round(((i + 1) / totalChunks) * 100);
                     setUploadProgress(progress);
@@ -101,7 +108,7 @@ export default function NewPost() {
                                 {uploadProgress === 100 ? <CheckCircle2 size={16} className="text-teal-400" /> : <div className="w-3 h-3 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />}
                                 {uploadStatus}
                             </span>
-                            <span className="text-teal-400 font-bold">{uploadProgress}%</span>
+                            <span className="text-teal-400 font-bold">{uploadedMB}MB / {totalMB}MB ({uploadProgress}%)</span>
                         </div>
                         <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
                             <div

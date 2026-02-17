@@ -17,18 +17,18 @@ export interface Post {
 // Initialize a post and return its ID
 export async function initializePost(title: string, content: string, tags: string[], attachmentName: string | null) {
     const { rows } = await db.query(
-        "INSERT INTO posts (title, content, attachment_name, attachment_data, tags) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-        [title, content, attachmentName, attachmentName ? "" : null, tags]
+        "INSERT INTO posts (title, content, attachment_name, tags) VALUES ($1, $2, $3, $4) RETURNING id",
+        [title, content, attachmentName, tags]
     );
     return rows[0].id;
 }
 
-// Append a chunk of base64 data to the attachment_data column
-export async function uploadChunk(postId: number, formData: FormData) {
+// Insert a chunk of base64 data into the post_chunks table
+export async function uploadChunk(postId: number, formData: FormData, chunkIndex: number) {
     const chunkData = formData.get("chunk") as string;
     await db.query(
-        "UPDATE posts SET attachment_data = attachment_data || $1 WHERE id = $2",
-        [chunkData, postId]
+        "INSERT INTO post_chunks (post_id, chunk_index, data) VALUES ($1, $2, $3)",
+        [postId, chunkIndex, chunkData]
     );
 }
 
@@ -50,10 +50,13 @@ export async function createPost(formData: FormData) {
 // Update metadata and optionally prepare for new attachment
 export async function startUpdatePost(id: number, title: string, content: string, tags: string[], attachmentName: string | null, clearAttachment: boolean) {
     if (clearAttachment) {
+        // Clear metadata
         await db.query(
-            "UPDATE posts SET title = $1, content = $2, tags = $3, attachment_name = $4, attachment_data = '' WHERE id = $5",
+            "UPDATE posts SET title = $1, content = $2, tags = $3, attachment_name = $4 WHERE id = $5",
             [title, content, tags, attachmentName, id]
         );
+        // Delete old chunks
+        await db.query("DELETE FROM post_chunks WHERE post_id = $1", [id]);
     } else {
         await db.query(
             "UPDATE posts SET title = $1, content = $2, tags = $3 WHERE id = $4",
@@ -93,16 +96,24 @@ export async function getPost(id: number): Promise<Post | null> {
 }
 
 export async function getAttachment(id: number) {
-    const { rows } = await db.query(
-        "SELECT attachment_name, attachment_data FROM posts WHERE id = $1",
+    const postRows = await db.query(
+        "SELECT attachment_name FROM posts WHERE id = $1",
         [id]
     );
 
-    const post = rows[0];
-    if (!post || !post.attachment_name || !post.attachment_data) return null;
+    const post = postRows.rows[0];
+    if (!post || !post.attachment_name) return null;
+
+    // Fetch all chunks in order
+    const chunkRows = await db.query(
+        "SELECT data FROM post_chunks WHERE post_id = $1 ORDER BY chunk_index ASC",
+        [id]
+    );
+
+    const fullData = chunkRows.rows.map(r => r.data).join("");
 
     return {
         name: post.attachment_name,
-        data: post.attachment_data // Return base64, handled by consumer
+        data: fullData
     };
 }
