@@ -12,3 +12,25 @@ _site
 .sass-cache
 .jekyll-metadata
 .users.yml
+
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+.venv
+venv/
+
+# App secrets — encrypted connection store
+.famt_connections.key
+.famt_connections.enc
+
+# macOS
+.DS_Store
+

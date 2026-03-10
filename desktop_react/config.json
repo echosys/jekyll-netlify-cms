@@ -1,0 +1,10 @@
+{
+  "app_url": "http://localhost:5173/",
+  "window_title": "Family Tree App",
+  "window_width": 1280,
+  "window_height": 800,
+  "zoom_factor": 1.0,
+  "remember_window_geometry": true,
+  "dev_tools_enabled": false
+}
+
