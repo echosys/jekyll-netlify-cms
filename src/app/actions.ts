@@ -14,6 +14,33 @@ export interface Post {
     created_at: Date;
 }
 
+export type DbHealthStatus = {
+    status: 'green' | 'yellow' | 'red';
+    host: string;
+};
+
+export async function checkDbHealth(): Promise<DbHealthStatus> {
+    const url = process.env.POSTGRES_URL || '';
+    let host = 'Unknown';
+    try {
+        if (url) {
+            const parsedUrl = new URL(url);
+            host = parsedUrl.hostname;
+        }
+    } catch (e) {
+        // invalid URL
+    }
+
+    try {
+        await db.query('SELECT 1');
+        return { status: 'green', host };
+    } catch (error) {
+        console.error("DB Health Check Failed:", error);
+        return { status: 'red', host };
+    }
+}
+
+
 // Initialize a post and return its ID
 export async function initializePost(title: string, content: string, tags: string[], attachmentName: string | null) {
     const { rows } = await db.query(
