@@ -4,11 +4,21 @@
  * Returns: { tree: Tree, images: Record<resourceId, base64> }
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { makePool, schemaTable, ConnPayload } from './pg-helpers';
+import { makePool, schemaTable, ConnPayload, isConnPayload, mapPgError, sendError } from './pg-helpers';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { conn, treeName }: { conn: ConnPayload; treeName: string } = req.body;
+  if (req.method !== 'POST') return sendError(res, 405, { code: 'METHOD_NOT_ALLOWED', error: 'Method not allowed.' });
+
+  const body = req.body as { conn?: unknown; treeName?: unknown };
+  if (!isConnPayload(body?.conn) || typeof body?.treeName !== 'string' || !body.treeName.trim()) {
+    return sendError(res, 400, {
+      code: 'INVALID_REQUEST',
+      error: 'Body must include { conn: ConnPayload, treeName: string }.',
+    });
+  }
+
+  const conn: ConnPayload = body.conn;
+  const treeName = body.treeName;
   const pool = makePool(conn);
   const st = schemaTable(conn);
 
@@ -21,10 +31,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [treeName],
     );
 
-    let treeMeta: any = {};
-    const nodes: any[] = [];
-    const edges: any[] = [];
-    const resources: any[] = [];
+    let treeMeta: Record<string, unknown> = {};
+    const nodes: unknown[] = [];
+    const edges: unknown[] = [];
+    const resources: unknown[] = [];
     const images: Record<string, string> = {};
 
     for (const row of result.rows) {
@@ -48,10 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     res.json({ tree, images });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    const mapped = mapPgError(err, conn);
+    sendError(res, mapped.status, mapped.body);
   } finally {
     await pool.end();
   }
 }
-

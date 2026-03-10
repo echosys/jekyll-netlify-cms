@@ -11,12 +11,12 @@
  * Images are scaled to JPEG <= 2 MB before storing, matching the desktop app.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { makePool, schemaTable, ConnPayload } from './pg-helpers';
+import { makePool, schemaTable, ConnPayload, isConnPayload, mapPgError, sendError } from './pg-helpers';
 import { randomUUID } from 'crypto';
 
 interface ExportBody {
   conn: ConnPayload;
-  tree: any;         // full Tree JSON
+  tree: Record<string, unknown>;         // full Tree JSON
   folderName: string;
   storageMode: string;
   /** Optional map resourceId → base64 JPEG, sent from browser IndexedDB mode */
@@ -24,8 +24,17 @@ interface ExportBody {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { conn, tree, folderName, storageMode, images = {} }: ExportBody = req.body;
+  if (req.method !== 'POST') return sendError(res, 405, { code: 'METHOD_NOT_ALLOWED', error: 'Method not allowed.' });
+
+  const body = req.body as Partial<ExportBody>;
+  if (!isConnPayload(body?.conn) || !body.tree || typeof body.tree !== 'object') {
+    return sendError(res, 400, {
+      code: 'INVALID_REQUEST',
+      error: 'Body must include { conn: ConnPayload, tree: object }.',
+    });
+  }
+
+  const { conn, tree, images = {} } = body as ExportBody;
   const pool = makePool(conn);
   const st = schemaTable(conn);
 
@@ -79,10 +88,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } finally {
       client.release();
     }
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    const mapped = mapPgError(err, conn);
+    sendError(res, mapped.status, mapped.body);
   } finally {
     await pool.end();
   }
 }
-
