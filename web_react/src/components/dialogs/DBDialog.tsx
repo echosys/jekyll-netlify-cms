@@ -103,7 +103,27 @@ function connFromSaved(s: SavedConn): ConnParams {
   };
 }
 
-async function safeFetch(url: string, body: unknown): Promise<{ ok: boolean; data: any; errorMsg: string }> {
+interface ApiErrorBody {
+  error?: string;
+  message?: string;
+  code?: string;
+  hint?: string;
+  detail?: unknown;
+}
+
+function formatApiError(data: unknown, status: number, statusText: string): string {
+  if (!data || typeof data !== 'object') {
+    if (status === 502) return 'Local API server not reachable (502). Start with: npm run dev:all';
+    return `Server error ${status}: ${statusText}`;
+  }
+  const d = data as ApiErrorBody;
+  const base = d.error ?? d.message ?? `HTTP ${status}`;
+  const hint = d.hint ? ` — ${d.hint}` : '';
+  const code = d.code ? ` [${d.code}]` : '';
+  return `${base}${hint}${code}`;
+}
+
+async function safeFetch(url: string, body: unknown): Promise<{ ok: boolean; data: unknown; errorMsg: string }> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -111,8 +131,8 @@ async function safeFetch(url: string, body: unknown): Promise<{ ok: boolean; dat
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (e: any) {
-    const msg: string = e?.message ?? String(e);
+  } catch (e: unknown) {
+    const msg: string = e instanceof Error ? e.message : String(e);
     if (msg.includes('ECONNREFUSED') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
       return { ok: false, data: null, errorMsg: 'Cannot reach local API server — is it running?' };
     }
@@ -120,20 +140,17 @@ async function safeFetch(url: string, body: unknown): Promise<{ ok: boolean; dat
   }
 
   const text = await res.text();
-  let data: any = null;
+  let data: unknown = null;
   try {
     data = JSON.parse(text);
   } catch {
     if (!res.ok) {
-      const hint = res.status === 502
-        ? 'Local API server not reachable (502). Start with: npm run dev:all'
-        : `Server error ${res.status}: ${res.statusText}`;
-      return { ok: false, data: null, errorMsg: hint };
+      return { ok: false, data: null, errorMsg: formatApiError(null, res.status, res.statusText) };
     }
   }
 
   if (!res.ok) {
-    return { ok: false, data, errorMsg: data?.error ?? data?.message ?? `HTTP ${res.status}` };
+    return { ok: false, data, errorMsg: formatApiError(data, res.status, res.statusText) };
   }
   return { ok: true, data, errorMsg: '' };
 }
@@ -265,7 +282,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
     setStatus('Fetching tree list...');
     const { ok, data, errorMsg } = await safeFetch('/api/pg-list', connPayload());
     if (ok) {
-      const trees = data.trees ?? [];
+      const trees = (data as { trees?: string[] })?.trees ?? [];
       setDbTrees(trees);
       setGlobalTrees(trees);
       setStatus(`Found ${trees.length} tree(s).`);
@@ -382,7 +399,10 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
     });
 
     setStatus(ok ? `✅ Exported "${activeTree.tree_name}".` : `❌ ${errorMsg}`);
-    if (!ok && data?.detail) setStatus((s) => `${s}\n${data.detail}`);
+    if (!ok) {
+      const errDetail = (data as ApiErrorBody | null)?.detail;
+      if (errDetail) setStatus((s) => `${s}\n${errDetail}`);
+    }
     if (ok) await listDbTrees();
     setBusy(false);
   };
@@ -401,10 +421,12 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
       return;
     }
 
-    const { tree, images } = data;
+    const importResp = data as { tree: Record<string, unknown>; images: Record<string, string> };
+    const tree = importResp.tree as unknown as import('../../models/types').Tree & { resources: Array<{ id: string; filename: string }> };
+    const images = importResp.images;
     const folderName = slugify(tree.tree_name);
-    for (const [resourceId, b64] of Object.entries(images as Record<string, string>)) {
-      const resource = tree.resources.find((r: any) => r.id === resourceId);
+    for (const [resourceId, b64] of Object.entries(images)) {
+      const resource = tree.resources.find((r) => r.id === resourceId);
       if (resource) await uploadImage(folderName, resourceId, resource.filename, b64ToBlob(b64));
     }
 
@@ -512,7 +534,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
     const pollNow = async () => {
       const { ok, data } = await safeFetch('/api/pg-list', buildPayload(connRef.current));
       if (ok) {
-        setGlobalTrees(data.trees ?? []);
+        setGlobalTrees((data as { trees?: string[] })?.trees ?? []);
         syncStore.setConnStatus('ok');
       } else {
         syncStore.setConnStatus('error');
