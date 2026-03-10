@@ -1,36 +1,67 @@
-
-
+# IDE
 /.idea/
-.env.local
-.env
-.env.txt
-/.next
-/node_modules
-.DS_Store
+.vscode/
 
-_site
-.sass-cache
-.jekyll-metadata
+# Environment
+.env
+.env.local
+.env.*.local
+.env.txt
+
+# macOS
+.DS_Store
+Thumbs.db
+
+# Jekyll
+_site/
+.sass-cache/
+.jekyll-metadata/
+.jekyll-cache/
 .users.yml
 
+# Next.js / React
+/.next/
+/out/
+/build/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+.pnpm-debug.log*
+.eslintcache
+*.tsbuildinfo
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
 *.pyd
 .Python
+*.egg
 *.egg-info/
 dist/
 build/
+.eggs/
 .env
-.venv
+.venv/
 venv/
+ENV/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+.hypothesis/
 
 # App secrets — encrypted connection store
 .famt_connections.key
 .famt_connections.enc
 
-# macOS
-.DS_Store
-
+# Zip archives
+*.zip
