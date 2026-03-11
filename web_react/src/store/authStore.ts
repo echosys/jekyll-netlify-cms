@@ -11,6 +11,8 @@ export interface UserDoc {
   role: 'dev' | 'user';
   color: string;       // hex color e.g. "#1E88E5"
   lastActivity?: number;
+  /** List of tree names this user is allowed to access (case-insensitive, stripped match). Dev = no restriction. */
+  allowed_trees?: string[];
 }
 
 interface AuthState {
@@ -19,6 +21,8 @@ interface AuthState {
   login: (user: UserDoc) => void;
   logout: () => void;
   setHasHydrated: (v: boolean) => void;
+  /** Patch allowed_trees on the cached user doc after a server-side refresh */
+  updateAllowedTrees: (trees: string[] | undefined) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -29,6 +33,8 @@ export const useAuthStore = create<AuthState>()(
       login: (user) => set({ user }),
       logout: () => set({ user: null }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
+      updateAllowedTrees: (trees) =>
+        set((s) => s.user ? { user: { ...s.user, allowed_trees: trees } } : {}),
     }),
     {
       name: 'famt_auth',

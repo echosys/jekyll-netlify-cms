@@ -15,6 +15,8 @@
  *     lastActivity: number   — epoch ms, updated on every heartbeat/status call
  *     forcedByMsg?: string   — set by server when dev force-takes lock from this user;
  *                              cleared on next heartbeat from this user
+ *     allowed_trees?: string[] — list of tree names (as stored in PG) this user can see;
+ *                              undefined/missing = no restriction (dev users); empty = no access
  *   }
  *
  * famt_lock   — single doc (_id: 'global'), global write-lock state
@@ -62,6 +64,8 @@ export interface UserDoc {
   color: string;        // hex color e.g. "#4CAF50"
   lastActivity?: number; // epoch ms — updated on every heartbeat/status call
   forcedByMsg?: string;  // set when dev force-takes lock; cleared on next heartbeat
+  /** List of tree names this user is allowed to access. Undefined = no restriction (dev). */
+  allowed_trees?: string[];
 }
 
 /** Lock document shape in famt_login.famt_lock (single doc, _id: 'global') */

@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "vite",
     "dev:fs": "tsx api/fs-server.ts",
+    "kill:fs": "lsof -ti:3001 | xargs kill -9 2>/dev/null || true",
+    "predev:all": "npm run kill:fs",
     "dev:all": "concurrently \"npm run dev:fs\" \"npm run dev\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

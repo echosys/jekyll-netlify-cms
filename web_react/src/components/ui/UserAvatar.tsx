@@ -10,6 +10,8 @@ interface Props {
   user: UserDoc;
   onlineUsers: UserDoc[];
   onLogout: () => void;
+  /** Dev-only: callback to open the tree access manager */
+  onManageAccess?: () => void;
 }
 
 function InitialCircle({ user, size = 32 }: { user: UserDoc; size?: number }) {
@@ -36,7 +38,7 @@ function InitialCircle({ user, size = 32 }: { user: UserDoc; size?: number }) {
   );
 }
 
-export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
+export default function UserAvatar({ user, onlineUsers, onLogout, onManageAccess }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -52,7 +54,7 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
   const others = onlineUsers.filter((u) => u.username !== user.username);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', zIndex: 9000 }}>
       <button
         onClick={() => setOpen((o) => !o)}
         style={{
@@ -92,7 +94,7 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
             right: 0,
             padding: '14px 16px',
             minWidth: 210,
-            zIndex: 1000,
+            zIndex: 9000,
           }}
         >
           {/* Self */}
@@ -143,6 +145,30 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
           )}
 
           <hr style={{ border: 'none', borderTop: '1px solid rgba(168,85,247,0.15)', margin: '8px 0' }} />
+
+          {/* Dev-only: Manage Tree Access */}
+          {user.role === 'dev' && onManageAccess && (
+            <button
+              onClick={() => { setOpen(false); onManageAccess(); }}
+              style={{
+                width: '100%',
+                padding: '7px 0',
+                border: '1px solid rgba(168,85,247,0.2)',
+                background: 'rgba(243,232,255,0.5)',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontSize: 13,
+                color: '#7e22ce',
+                fontWeight: 600,
+                backdropFilter: 'blur(8px)',
+                transition: 'background 0.2s',
+                marginBottom: 8,
+              }}
+            >
+              🔑 Manage Tree Access
+            </button>
+          )}
+
           <button
             onClick={onLogout}
             style={{

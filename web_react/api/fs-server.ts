@@ -10,6 +10,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { IncomingMessage, ServerResponse } from 'http';
 
@@ -46,6 +47,7 @@ import pgImport from './pg-import.js';
 import pgDelete from './pg-delete.js';
 import mongoLogin from './mongo-login.js';
 import mongoLock from './mongo-lock.js';
+import mongoAdmin from './mongo-admin.js';
 
 
 const PORT = 3001;
@@ -469,12 +471,26 @@ const server = http.createServer(async (req, res) => {
     if (url === '/api/pg-delete') return callVercelHandler(pgDelete, req, res);
 
     // /api/mongo-* — MongoDB auth + lock handlers
-    if (url === '/api/mongo-login') return callVercelHandler(mongoLogin, req, res);
-    if (url === '/api/mongo-lock')  return callVercelHandler(mongoLock, req, res);
+    if (url === '/api/mongo-login')  return callVercelHandler(mongoLogin, req, res);
+    if (url === '/api/mongo-lock')   return callVercelHandler(mongoLock, req, res);
+    if (url === '/api/mongo-admin')  return callVercelHandler(mongoAdmin, req, res);
 
     notFound(res);
   } catch (err: any) {
     json(res, { error: err.message }, 500);
+  }
+});
+
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`⚠️  Port ${PORT} in use — killing old process and retrying…`);
+    try {
+      execSync(`lsof -ti:${PORT} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+    } catch { /* ignore */ }
+    setTimeout(() => server.listen(PORT), 500);
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
   }
 });
 

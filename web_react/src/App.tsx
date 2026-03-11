@@ -19,6 +19,7 @@ import DBDialog from './components/dialogs/DBDialog';
 import SyncStatusPill from './components/ui/SyncStatusPill';
 import LockButton from './components/ui/LockButton';
 import UserAvatar from './components/ui/UserAvatar';
+import UserTreeAccessDialog from './components/dialogs/UserTreeAccessDialog';
 
 type Tab = 'canvas' | 'resources';
 
@@ -52,7 +53,7 @@ export default function App() {
   const { markSaved, setTreeList, openTree } = useTreeStore();
   const syncStore  = useSyncStore();
   const lockStore  = useLockStore();
-  const { user, logout: authLogout } = useAuthStore();
+  const { user, logout: authLogout, updateAllowedTrees } = useAuthStore();
 
   const isUser = user?.role === 'user';
   /** Active tree is DB-linked (either user role or dev with sync active) */
@@ -63,6 +64,7 @@ export default function App() {
   const [showImportExport, setShowImportExport] = useState(false);
   const [showDB, setShowDB]                   = useState(false);
   const [dbInitialTab, setDbInitialTab]       = useState<'export' | 'import' | 'sync'>('export');
+  const [showUserAccess, setShowUserAccess]   = useState(false);
   const [discardNotice, setDiscardNotice]     = useState(false);
   const [lockBanner, setLockBanner]           = useState<string | null>(null);
   const [autoResumeError, setAutoResumeError] = useState('');
@@ -150,11 +152,46 @@ export default function App() {
       try {
       if (isUser) {
         // ── User role: reload all synced trees ─────────────────────────────
+
+        // Always re-fetch allowed_trees from Mongo so revoked access takes
+        // effect immediately without requiring a fresh login.
+        let freshAllowedTrees: string[] | undefined = user?.allowed_trees;
+        if (user) {
+          try {
+            const selfRes = await safeFetch('/api/mongo-admin', {
+              action: 'get-self',
+              requesterUsername: user.username,
+            });
+            if (selfRes.ok && selfRes.data?.user) {
+              const fresh = selfRes.data.user.allowed_trees as string[] | undefined;
+              freshAllowedTrees = fresh;
+              updateAllowedTrees(fresh); // patch sessionStorage so it stays in sync
+              console.log('[App] auto-resume: refreshed allowed_trees from Mongo:', fresh);
+            }
+          } catch { /* network offline — fall back to cached value */ }
+        }
+
         const syncedMap = syncStore.syncedTrees;
-        const entries = Object.entries(syncedMap);
+        let entries = Object.entries(syncedMap);
         console.log('[App] auto-resume user: syncedTrees count=', entries.length, 'keys=', Object.keys(syncedMap));
+
+        // Filter by the freshly-fetched allowed_trees (case-insensitive, stripped)
+        if (Array.isArray(freshAllowedTrees) && freshAllowedTrees.length > 0) {
+          const normalised = freshAllowedTrees.map((t) => t.trim().toLowerCase());
+          entries = entries.filter(([, link]) => normalised.includes(link.dbTreeName.trim().toLowerCase()));
+          console.log('[App] auto-resume: filtered by allowed_trees →', entries.map(([f]) => f));
+        } else if (Array.isArray(freshAllowedTrees) && freshAllowedTrees.length === 0) {
+          // Explicitly empty = no access at all
+          entries = [];
+          console.log('[App] auto-resume: allowed_trees is empty — no access');
+        }
+
         if (entries.length === 0) {
-          setAutoResumeError('No synced trees found. Please log out and log in again.');
+          setAutoResumeError(
+            Array.isArray(freshAllowedTrees) && freshAllowedTrees.length === 0
+              ? 'You do not have access to any family trees. Contact your admin.'
+              : 'No synced trees found. Please log out and log in again.',
+          );
           return;
         }
 
@@ -567,7 +604,7 @@ export default function App() {
                   onClick={user?.role === 'dev' ? () => { setDbInitialTab('sync'); setShowDB(true); } : undefined}
                   title={user?.role === 'dev' ? 'Click to open PostgreSQL › Sync tab' : undefined}
                 />
-                {user && <UserAvatar user={user} onlineUsers={lockStore.onlineUsers} onLogout={handleLogout} />}
+                {user && <UserAvatar user={user} onlineUsers={lockStore.onlineUsers} onLogout={handleLogout} onManageAccess={user.role === 'dev' ? () => setShowUserAccess(true) : undefined} />}
               </div>
             </div>
 
@@ -585,7 +622,7 @@ export default function App() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#aaa', background: 'transparent' }}>
             {user && (
               <div style={{ position: 'absolute', top: 12, right: 16 }}>
-                <UserAvatar user={user} onlineUsers={lockStore.onlineUsers} onLogout={handleLogout} />
+                <UserAvatar user={user} onlineUsers={lockStore.onlineUsers} onLogout={handleLogout} onManageAccess={user.role === 'dev' ? () => setShowUserAccess(true) : undefined} />
               </div>
             )}
             <div style={{ fontSize: 64, marginBottom: 16 }}>🌳</div>
@@ -619,6 +656,7 @@ export default function App() {
       {openPerson && <PersonDialog node={openPerson} onClose={() => setOpenPerson(null)} />}
       {showImportExport && !isUser && <ImportExportDialog onClose={() => setShowImportExport(false)} refreshTreeList={refreshTreeList} />}
       {showDB && <DBDialog onClose={() => { setShowDB(false); setDbInitialTab('export'); }} refreshTreeList={refreshTreeList} readOnly={isUser} initialTab={dbInitialTab} />}
+      {showUserAccess && user?.role === 'dev' && <UserTreeAccessDialog onClose={() => setShowUserAccess(false)} />}
     </div>
   );
 }

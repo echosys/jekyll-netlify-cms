@@ -156,7 +156,7 @@ export default function LoginPage() {
 
       if (user.role === 'user') {
         setLoadingMsg('Connecting to database…');
-        const success = await autoConnectUser();
+        const success = await autoConnectUser(user);
         if (!success) return;
       }
 
@@ -166,7 +166,8 @@ export default function LoginPage() {
     }
   };
 
-  const autoConnectUser = async (): Promise<boolean> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const autoConnectUser = async (user: any): Promise<boolean> => {
     console.log('[login] autoConnectUser: start');
     // ── 1. Fetch VITE_PG_CONN from server env ──────────────────────────────
     let connString = '';
@@ -240,8 +241,23 @@ export default function LoginPage() {
     // ── 3. List all trees in DB ────────────────────────────────────────────
     setLoadingMsg('Loading your trees…');
     const listRes = await safeFetch('/api/pg-list', testConn);
-    const dbTreeNames: string[] = listRes.ok ? (listRes.data?.trees ?? []) : [];
+    let dbTreeNames: string[] = listRes.ok ? (listRes.data?.trees ?? []) : [];
     console.log('[login] pg-list result:', listRes.ok, 'trees:', dbTreeNames);
+
+    // Filter by allowed_trees if set (user role) — dev has no restriction
+    // undefined/missing = no restriction; [] = no access; [...] = filtered list
+    const allowedTrees: string[] | undefined = user['allowed_trees'] as string[] | undefined;
+    if (Array.isArray(allowedTrees)) {
+      if (allowedTrees.length === 0) {
+        // Explicitly empty — no access at all
+        setError('You do not have access to any family trees. Contact your admin.');
+        return false;
+      }
+      // Normalize: strip whitespace, lowercase
+      const normalised = allowedTrees.map((t) => t.trim().toLowerCase());
+      dbTreeNames = dbTreeNames.filter((name) => normalised.includes(name.trim().toLowerCase()));
+      console.log('[login] filtered by allowed_trees:', dbTreeNames);
+    }
 
     if (dbTreeNames.length === 0) {
       setError('No family trees found in the database. Contact your admin.');
