@@ -40,14 +40,8 @@ const ENV_LOCAL_PATH = path.resolve(__dirname, '../.env.local');
 
 // ── Import the same pg handlers used by Vercel ────────────────────────────────
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import pgTest from './pg-test.js';
-import pgList from './pg-list.js';
-import pgExport from './pg-export.js';
-import pgImport from './pg-import.js';
-import pgDelete from './pg-delete.js';
-import mongoLogin from './mongo-login.js';
-import mongoLock from './mongo-lock.js';
-import mongoAdmin from './mongo-admin.js';
+import pgHandler from './pg.js';
+import mongoHandler from './mongo.js';
 
 
 const PORT = 3001;
@@ -366,6 +360,7 @@ async function callVercelHandler(
 
   const vercelReq = {
     method: req.method,
+    url: req.url,
     body,
     headers: req.headers,
     query: {},
@@ -463,17 +458,11 @@ const server = http.createServer(async (req, res) => {
       if (method === 'DELETE') return handleDeleteImage(res, folder, file);
     }
 
-    // /api/pg-* — delegate to the same Vercel handlers
-    if (url === '/api/pg-test')   return callVercelHandler(pgTest, req, res);
-    if (url === '/api/pg-list')   return callVercelHandler(pgList, req, res);
-    if (url === '/api/pg-export') return callVercelHandler(pgExport, req, res);
-    if (url === '/api/pg-import') return callVercelHandler(pgImport, req, res);
-    if (url === '/api/pg-delete') return callVercelHandler(pgDelete, req, res);
+    // /api/pg-* — delegate to merged pg handler (pg.ts dispatches by req.url)
+    if (url.startsWith('/api/pg-')) return callVercelHandler(pgHandler, req, res);
 
-    // /api/mongo-* — MongoDB auth + lock handlers
-    if (url === '/api/mongo-login')  return callVercelHandler(mongoLogin, req, res);
-    if (url === '/api/mongo-lock')   return callVercelHandler(mongoLock, req, res);
-    if (url === '/api/mongo-admin')  return callVercelHandler(mongoAdmin, req, res);
+    // /api/mongo-* — delegate to merged mongo handler (mongo.ts dispatches by req.url)
+    if (url.startsWith('/api/mongo-')) return callVercelHandler(mongoHandler, req, res);
 
     notFound(res);
   } catch (err: any) {

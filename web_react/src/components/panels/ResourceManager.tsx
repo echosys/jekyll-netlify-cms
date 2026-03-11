@@ -1,13 +1,15 @@
 /**
  * ResourceManager.tsx — Photo grid tab (Tab 2).
- * Thumbnail grid with filter bar. Click thumbnail → TagEditor.
+ * Thumbnail grid with filter bar + group-by. Click thumbnail → TagEditor.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Resource } from '../../models/types';
 import { useTreeStore } from '../../store/treeStore';
 import { getImageUrl, uploadImage } from '../../db/storageAdapter';
 import { makeResource } from '../../models/types';
 import TagEditor from './TagEditor';
+
+type GroupBy = 'none' | 'date' | 'person' | 'location' | 'tag';
 
 export default function ResourceManager() {
   const activeTree = useTreeStore((s) => s.activeTree);
@@ -19,10 +21,12 @@ export default function ResourceManager() {
   const [filterDate, setFilterDate] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
   const [filterCustom, setFilterCustom] = useState('');
+  const [groupBy, setGroupBy] = useState<GroupBy>('none');
   const [tagEditorIndex, setTagEditorIndex] = useState<number | null>(null);
+  const [tagEditorList, setTagEditorList] = useState<Resource[]>([]);
 
-  const resources = activeTree?.resources ?? [];
-  const nodes = activeTree?.nodes ?? [];
+  const resources = useMemo(() => activeTree?.resources ?? [], [activeTree]);
+  const nodes = useMemo(() => activeTree?.nodes ?? [], [activeTree]);
 
   // Load thumbnail URLs
   useEffect(() => {
@@ -40,6 +44,16 @@ export default function ResourceManager() {
     loadAll();
   }, [resources, activeFolder]);
 
+  // Derived: all existing custom tags (sorted)
+  const allCustomTags = Array.from(
+    new Set(resources.flatMap((r) => r.tags.custom_tags)),
+  ).sort((a, b) => a.localeCompare(b));
+
+  // Collect unique person names for datalist
+  const personNames = Array.from(
+    new Set(nodes.map((n) => n.name).filter(Boolean).sort((a, b) => a.localeCompare(b))),
+  );
+
   // Filter
   const filtered = resources.filter((r) => {
     if (filterPerson) {
@@ -56,14 +70,53 @@ export default function ResourceManager() {
     }
     if (filterDate && !r.tags.date?.includes(filterDate)) return false;
     if (filterLocation && !r.tags.location?.toLowerCase().includes(filterLocation.toLowerCase())) return false;
-    if (filterCustom) {
-      const match = r.tags.custom_tags.some((t) =>
-        t.toLowerCase().includes(filterCustom.toLowerCase()),
-      );
-      if (!match) return false;
-    }
-    return true;
+    return !filterCustom || r.tags.custom_tags.some((t) => t.toLowerCase().includes(filterCustom.toLowerCase()));
   });
+
+  // Group logic
+  type Group = { key: string; label: string; items: Resource[] };
+  const buildGroups = (): Group[] => {
+    if (groupBy === 'none') return [{ key: '__all__', label: '', items: filtered }];
+
+    const map = new Map<string, Resource[]>();
+    const UNGROUPED = '(none)';
+
+    filtered.forEach((r) => {
+      let keys: string[] = [];
+      if (groupBy === 'date') keys = [r.tags.date ?? UNGROUPED];
+      else if (groupBy === 'person') {
+        keys = r.tags.persons.map((pid) => {
+          if (pid.startsWith('__orphan__:')) return `⚠ ${pid.slice(11)}`;
+          const n = nodes.find((x) => x.id === pid);
+          return n?.name ?? pid;
+        });
+        if (keys.length === 0) keys = [UNGROUPED];
+      } else if (groupBy === 'location') keys = [r.tags.location ?? UNGROUPED];
+      else if (groupBy === 'tag') {
+        keys = r.tags.custom_tags.length > 0 ? r.tags.custom_tags : [UNGROUPED];
+      }
+      keys.forEach((k) => {
+        if (!map.has(k)) map.set(k, []);
+        map.get(k)!.push(r);
+      });
+    });
+
+    return Array.from(map.entries())
+      .sort(([a], [b]) => {
+        if (a === UNGROUPED) return 1;
+        if (b === UNGROUPED) return -1;
+        return a.localeCompare(b);
+      })
+      .map(([key, items]) => ({ key, label: key, items }));
+  };
+
+  const groups = buildGroups();
+
+  const openTagEditor = (resource: Resource, groupItems: Resource[]) => {
+    const idx = groupItems.indexOf(resource);
+    setTagEditorList(groupItems);
+    setTagEditorIndex(idx);
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -94,91 +147,160 @@ export default function ResourceManager() {
 
   if (!activeTree) return null;
 
-  // Collect unique person names for datalist
-  const personNames = Array.from(
-    new Set(
-      nodes
-        .map((n) => n.name)
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b)),
-    ),
-  );
-
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Filter bar */}
+      {/* ── Filter / toolbar bar ── */}
       <div style={{
         display: 'flex', gap: 8, padding: '10px 16px', borderBottom: '1px solid #eee',
         background: '#f8f9fa', flexWrap: 'wrap', alignItems: 'center',
       }}>
-        <FilterInput placeholder="🔍 Person" value={filterPerson} onChange={setFilterPerson} listId="person-list" />
-        <datalist id="person-list">
-          {personNames.map((name) => <option key={name} value={name} />)}
+        {/* Person filter */}
+        <FilterInput placeholder="🔍 Person" value={filterPerson} onChange={setFilterPerson} listId="rm-person-list" />
+        <datalist id="rm-person-list">
+          {personNames.map((n) => <option key={n} value={n} />)}
         </datalist>
+
+        {/* Date filter */}
         <FilterInput placeholder="📅 Date" value={filterDate} onChange={setFilterDate} />
+
+        {/* Location filter */}
         <FilterInput placeholder="📍 Location" value={filterLocation} onChange={setFilterLocation} />
-        <FilterInput placeholder="🏷 Tag" value={filterCustom} onChange={setFilterCustom} />
-        <label style={{
-          padding: '6px 14px', borderRadius: 6, border: '1px solid #1565C0',
-          color: '#1565C0', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-          background: 'none', whiteSpace: 'nowrap',
-        }}>
-          ＋ Upload Photos
-          <input type="file" accept="image/*" multiple onChange={handleUpload} style={{ display: 'none' }} />
-        </label>
+
+        {/* Tag filter — select from existing tags OR type custom */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <input
+            value={filterCustom}
+            onChange={(e) => setFilterCustom(e.target.value)}
+            placeholder="🏷 Tag"
+            list="rm-tag-list"
+            style={{
+              padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc',
+              fontSize: 13, width: 130, outline: 'none',
+            }}
+          />
+          <datalist id="rm-tag-list">
+            {allCustomTags.map((t) => <option key={t} value={t} />)}
+          </datalist>
+          {filterCustom && (
+            <button
+              onClick={() => setFilterCustom('')}
+              style={{ position: 'absolute', right: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#999', fontSize: 14, lineHeight: 1 }}
+              title="Clear tag filter"
+            >×</button>
+          )}
+        </div>
+
+        {/* Group by */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 4 }}>
+          <span style={{ fontSize: 12, color: '#666', whiteSpace: 'nowrap', fontWeight: 600 }}>Group by:</span>
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+            style={{
+              padding: '6px 8px', borderRadius: 6, border: '1px solid #ccc',
+              fontSize: 13, outline: 'none', background: '#fff', cursor: 'pointer',
+            }}
+          >
+            <option value="none">None</option>
+            <option value="date">📅 Date</option>
+            <option value="person">👤 Person</option>
+            <option value="location">📍 Location</option>
+            <option value="tag">🏷 Tag</option>
+          </select>
+        </div>
+
+        <div style={{ marginLeft: 'auto' }}>
+          <label style={{
+            padding: '6px 14px', borderRadius: 6, border: '1px solid #7c3aed',
+            color: '#7c3aed', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            background: 'none', whiteSpace: 'nowrap', display: 'block',
+          }}>
+            ＋ Upload Photos
+            <input type="file" accept="image/*" multiple onChange={handleUpload} style={{ display: 'none' }} />
+          </label>
+        </div>
       </div>
 
-      {/* Grid */}
+      {/* ── Grid / groups ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
         {filtered.length === 0 ? (
           <div style={{ color: '#999', fontSize: 14, marginTop: 40, textAlign: 'center' }}>
             No photos yet. Upload some or import a ZIP.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-            {filtered.map((r, i) => (
-              <div
-                key={r.id}
-                style={{ width: 150, cursor: 'pointer' }}
-                onClick={() => setTagEditorIndex(i)}
-              >
+          groups.map((group) => (
+            <div key={group.key} style={{ marginBottom: groupBy !== 'none' ? 28 : 0 }}>
+              {/* Group header */}
+              {groupBy !== 'none' && (
                 <div style={{
-                  width: 150, height: 150, borderRadius: 8, overflow: 'hidden',
-                  border: '2px solid #e0e0e0', background: '#f5f5f5',
-                  transition: 'border-color 0.15s',
-                }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#1565C0')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e0e0e0')}
-                >
-                  {thumbUrls.get(r.id) ? (
-                    <img
-                      src={thumbUrls.get(r.id)}
-                      alt={r.filename}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc', fontSize: 12 }}>
-                      📷
+                  fontSize: 12, fontWeight: 700, color: '#7c3aed',
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  marginBottom: 10, paddingBottom: 5,
+                  borderBottom: '1px solid rgba(124,58,237,0.15)',
+                }}>
+                  {group.label}
+                  <span style={{ fontWeight: 400, color: '#999', marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>
+                    ({group.items.length})
+                  </span>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+                {group.items.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{ width: 150, cursor: 'pointer' }}
+                    onClick={() => openTagEditor(r, group.items)}
+                  >
+                    <div style={{
+                      position: 'relative',
+                      width: 150, height: 150, borderRadius: 8, overflow: 'hidden',
+                      border: '2px solid #e0e0e0', background: '#f5f5f5',
+                      transition: 'border-color 0.15s',
+                    }}
+                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#7c3aed')}
+                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e0e0e0')}
+                    >
+                      {thumbUrls.get(r.id) ? (
+                        <img
+                          src={thumbUrls.get(r.id)}
+                          alt={r.filename}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc', fontSize: 12 }}>
+                          📷
+                        </div>
+                      )}
+                      {/* Date badge */}
+                      {r.tags.date && (
+                        <div style={{
+                          position: 'absolute', bottom: 0, left: 0, right: 0,
+                          background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 10,
+                          padding: '3px 6px', textAlign: 'center',
+                        }}>
+                          {r.tags.date}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div style={{ fontSize: 11, marginTop: 4, color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.filename}
-                </div>
-                <div style={{ fontSize: 10, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {personTagsLine(r)}
-                </div>
+                    <div style={{ fontSize: 11, marginTop: 4, color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.filename}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {personTagsLine(r)}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         )}
       </div>
 
       {tagEditorIndex !== null && (
         <TagEditor
-          resources={filtered}
+          resources={tagEditorList}
           initialIndex={tagEditorIndex}
-          onClose={() => setTagEditorIndex(null)}
+          onClose={() => { setTagEditorIndex(null); setTagEditorList([]); }}
         />
       )}
     </div>
