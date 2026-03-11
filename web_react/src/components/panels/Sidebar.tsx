@@ -114,25 +114,24 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
     : loadingStorage ? '…' : '—';
 
   return (
-    <div style={{
+    <div className="sidebar-glass" style={{
       width: 220, height: '100%', display: 'flex', flexDirection: 'column',
-      borderRight: '1px solid #e0e0e0', background: '#fafafa',
     }}>
       {/* App title */}
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid #eee', background: '#fff' }}>
-        <div style={{ fontWeight: 800, fontSize: 16, color: '#1565C0' }}>🌳 FamTree</div>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(168,85,247,0.12)', background: 'transparent' }}>
+        <div style={{ fontWeight: 800, fontSize: 16, background: 'linear-gradient(135deg, #9333ea, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>🌳 FamTree</div>
         <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>Family Tree App</div>
       </div>
 
       {/* Storage mode badge + size — dev only */}
       {!isUser && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid #eee', background: storageBadge.color }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 4 }}>WORKING STORAGE</div>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(168,85,247,0.10)', background: 'rgba(243,232,255,0.4)' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9333ea', marginBottom: 4, letterSpacing: '0.05em' }}>WORKING STORAGE</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
             <div style={{
               display: 'inline-block', padding: '3px 10px', borderRadius: 12,
               border: `1px solid ${storageBadge.border}`, fontSize: 11,
-              fontWeight: 700, color: storageBadge.text,
+              fontWeight: 700, color: storageBadge.text, background: storageBadge.color,
             }}>
               {storageBadge.label}
             </div>
@@ -140,13 +139,10 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
             <button
               onClick={() => { loadStorageSize(); setShowStorageBreakdown(true); }}
               title="Click to see storage breakdown"
+              className="btn-ghost"
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                padding: '3px 8px', borderRadius: 10,
-                border: `1px solid ${storageBadge.border}`,
-                background: 'rgba(255,255,255,0.6)',
-                cursor: 'pointer', fontSize: 11, fontWeight: 700,
-                color: storageBadge.text,
+                padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700,
               }}
             >
               💾 {totalStr}
@@ -162,11 +158,11 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
 
       {/* Tree list header */}
       <div style={{ padding: '10px 12px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#555' }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#9333ea', letterSpacing: '0.07em' }}>
           {isUser ? 'YOUR TREE' : 'MY TREES'}
         </span>
         {!isUser && (
-          <button onClick={refresh} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#999' }}>↻</button>
+          <button onClick={refresh} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#c084fc' }}>↻</button>
         )}
       </div>
 
@@ -196,18 +192,18 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
             style={{
               padding: '9px 14px', cursor: clickable ? 'pointer' : 'default', display: 'flex',
               alignItems: 'center', justifyContent: 'space-between',
-              background: isActive ? '#E3F2FD' : 'transparent',
-              borderLeft: isActive ? '3px solid #1565C0' : '3px solid transparent',
+              background: isActive ? 'rgba(243,232,255,0.7)' : 'transparent',
+              borderLeft: isActive ? '3px solid #a855f7' : '3px solid transparent',
               borderBottom: '1px solid #f0f0f0',
             }}
-            onMouseEnter={(e) => { if (clickable && !isActive) e.currentTarget.style.background = '#f5f5f5'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = isActive ? '#E3F2FD' : 'transparent'; }}
+            onMouseEnter={(e) => { if (clickable && !isActive) e.currentTarget.style.background = 'rgba(243,232,255,0.4)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = isActive ? 'rgba(243,232,255,0.7)' : 'transparent'; }}
           >
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <div style={{ fontSize: 13, fontWeight: isActive ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
                 {meta.treeName}
                 {isSynced && (
-                  <span style={{ fontSize: 9, color: '#1565C0', fontWeight: 700, background: '#E3F2FD', borderRadius: 3, padding: '1px 4px', flexShrink: 0 }}>DB</span>
+                  <span className="badge-purple">DB</span>
                 )}
               </div>
               <div style={{ fontSize: 10, color: '#aaa', marginTop: 1 }}>{meta.folderName}</div>
@@ -242,26 +238,27 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
       {/* New tree form — dev only */}
       {!isUser && (
         creating ? (
-          <div style={{ padding: '10px 12px', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ padding: '10px 12px', borderTop: '1px solid rgba(168,85,247,0.12)', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <input
               autoFocus
               value={newTreeName}
               onChange={(e) => setNewTreeName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTree(); if (e.key === 'Escape') setCreating(false); }}
               placeholder="Tree name…"
-              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 13 }}
+              className="input-glass"
+              style={{ width: '100%' }}
             />
             <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={handleCreateTree} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: '#1565C0', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+              <button onClick={handleCreateTree} className="btn-purple" style={{ flex: 1, padding: '6px 0' }}>
                 Create
               </button>
-              <button onClick={() => setCreating(false)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer', fontSize: 12 }}>
+              <button onClick={() => setCreating(false)} className="btn-ghost" style={{ flex: 1, padding: '6px 0' }}>
                 Cancel
               </button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setCreating(true)} style={{ margin: '8px 12px', padding: '8px 0', borderRadius: 6, border: '1px dashed #1565C0', color: '#1565C0', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+          <button onClick={() => setCreating(true)} style={{ margin: '8px 12px', padding: '8px 0', borderRadius: 8, border: '1px dashed rgba(168,85,247,0.5)', color: '#9333ea', background: 'rgba(243,232,255,0.3)', cursor: 'pointer', fontSize: 13, fontWeight: 600, transition: 'all 0.2s' }}>
             + New Tree
           </button>
         )
@@ -269,14 +266,12 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
 
       {/* Import/Export buttons — dev only */}
       {!isUser && (
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <button onClick={onOpenImportExport}
-            style={{ padding: '7px 0', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#333' }}>
+        <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(168,85,247,0.12)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button onClick={onOpenImportExport} className="btn-ghost" style={{ padding: '7px 0', width: '100%' }}>
             📦 ZIP Import / Export
           </button>
           {onOpenDB && (
-            <button onClick={onOpenDB}
-              style={{ padding: '7px 0', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#333' }}>
+            <button onClick={onOpenDB} className="btn-ghost" style={{ padding: '7px 0', width: '100%' }}>
               🗄 PostgreSQL
             </button>
           )}
@@ -289,18 +284,17 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.35)' }}
             onClick={() => setShowStorageBreakdown(false)} />
-          <div style={{
+          <div className="dialog-glass" style={{
             position: 'fixed', top: '50%', left: '50%',
             transform: 'translate(-50%,-50%)',
-            zIndex: 9001, background: '#fff', borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            zIndex: 9001,
             width: 420, maxHeight: '80vh',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8f9fa' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(168,85,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(243,232,255,0.4)' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>💾 Storage Breakdown</div>
                 <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
@@ -313,9 +307,9 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
             </div>
 
             {/* Total */}
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(168,85,247,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#333' }}>Total Used</span>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#1565C0' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, background: 'linear-gradient(135deg,#9333ea,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 {storageSummary ? fmtBytes(storageSummary.totalBytes) : '…'}
               </span>
             </div>
@@ -345,7 +339,7 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
                         </div>
                         {/* Progress bar */}
                         <div style={{ height: 5, borderRadius: 3, background: '#eee', overflow: 'hidden', marginBottom: 4 }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: '#1565C0', borderRadius: 3, transition: 'width 0.3s' }} />
+                          <div className="progress-bar-fill" style={{ height: '100%', width: `${pct}%`, borderRadius: 3, transition: 'width 0.3s' }} />
                         </div>
                         {/* JSON vs images breakdown */}
                         <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#888' }}>
@@ -360,13 +354,11 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
             </div>
 
             {/* Refresh + close */}
-            <div style={{ padding: '10px 18px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <button onClick={loadStorageSize} disabled={loadingStorage}
-                style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid #ddd', background: '#f5f5f5', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+            <div style={{ padding: '10px 18px', borderTop: '1px solid rgba(168,85,247,0.12)', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+              <button onClick={loadStorageSize} disabled={loadingStorage} className="btn-ghost" style={{ padding: '6px 16px' }}>
                 {loadingStorage ? 'Calculating…' : '↻ Refresh'}
               </button>
-              <button onClick={() => setShowStorageBreakdown(false)}
-                style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#1565C0', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+              <button onClick={() => setShowStorageBreakdown(false)} className="btn-purple" style={{ padding: '6px 16px' }}>
                 Close
               </button>
             </div>

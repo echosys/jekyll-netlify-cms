@@ -571,11 +571,11 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
     : '#555';
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#fff', borderRadius: 14, width: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8f9fa' }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>🗄 PostgreSQL Connection</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>✕</button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(30,10,60,0.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="dialog-glass" style={{ width: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(168,85,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(243,232,255,0.35)' }}>
+          <h2 className="grad-text" style={{ margin: 0, fontSize: 18 }}>🗄 PostgreSQL Connection</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9333ea' }}>✕</button>
         </div>
 
         <div style={{ overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -718,21 +718,19 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #eee' }}>
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(168,85,247,0.15)' }}>
             {(['export', 'import', 'sync'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
+                className={tab === t ? 'tab-active' : 'tab-inactive'}
                 style={{
                   padding: '8px 20px',
                   border: 'none',
                   background: 'none',
                   cursor: 'pointer',
-                  fontWeight: tab === t ? 700 : 400,
-                  color: tab === t ? '#1565C0' : '#666',
-                  borderBottom: tab === t ? '2px solid #1565C0' : '2px solid transparent',
                   fontSize: 14,
-                  marginBottom: -2,
+                  marginBottom: -1,
                 }}
               >
                 {t === 'export' ? '⬆ Export' : t === 'import' ? '⬇ Import' : '🔄 Sync'}
@@ -748,16 +746,8 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
               <button
                 onClick={exportToDb}
                 disabled={!canUseDb || !activeTree || busy}
-                style={{
-                  padding: '9px 0',
-                  borderRadius: 7,
-                  border: 'none',
-                  background: canUseDb && activeTree ? '#1565C0' : '#ccc',
-                  color: '#fff',
-                  fontWeight: 700,
-                  cursor: canUseDb && activeTree ? 'pointer' : 'default',
-                  fontSize: 14,
-                }}
+                className={canUseDb && activeTree && !busy ? 'btn-purple' : 'btn-ghost'}
+                style={{ padding: '9px 0', width: '100%', opacity: !canUseDb || !activeTree || busy ? 0.5 : 1 }}
               >
                 {busy ? 'Exporting...' : '⬆ Export Current Tree'}
               </button>
@@ -772,7 +762,8 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
                   value={selectedTree}
                   onChange={(e) => setSelectedTree(e.target.value)}
                   disabled={!canUseDb}
-                  style={{ ...inputStyle, opacity: canUseDb ? 1 : 0.65 }}
+                  className="input-glass"
+                  style={{ width: '100%', opacity: canUseDb ? 1 : 0.65 }}
                 >
                   {(globalTrees.length ? globalTrees : dbTrees).map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -780,22 +771,14 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
               <button
                 onClick={importFromDb}
                 disabled={!canUseDb || !selectedTree || busy}
-                style={{
-                  padding: '9px 0',
-                  borderRadius: 7,
-                  border: 'none',
-                  background: canUseDb && selectedTree ? '#1565C0' : '#ccc',
-                  color: '#fff',
-                  fontWeight: 700,
-                  cursor: canUseDb && selectedTree ? 'pointer' : 'default',
-                  fontSize: 14,
-                }}
+                className={canUseDb && selectedTree && !busy ? 'btn-purple' : 'btn-ghost'}
+                style={{ padding: '9px 0', width: '100%', opacity: !canUseDb || !selectedTree || busy ? 0.5 : 1 }}
               >
                 {busy ? 'Importing...' : '⬇ Import Selected Tree'}
               </button>
 
               {selectedTree && (
-                <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: '#fff3f3', border: '1px solid #f48' }}>
+                <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'rgba(255,220,220,0.4)', backdropFilter: 'blur(8px)', border: '1px solid rgba(220,50,50,0.25)' }}>
                   <div style={{ fontSize: 13, color: '#c00', fontWeight: 700, marginBottom: 8 }}>🗑 Delete from DB</div>
                   <p style={{ margin: '0 0 8px', fontSize: 12, color: '#555' }}>Type <strong>{selectedTree}</strong> to confirm.</p>
                   <div style={{ display: 'flex', gap: 6 }}>
@@ -803,20 +786,18 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
                       value={deleteConfirm}
                       onChange={(e) => setDeleteConfirm(e.target.value)}
                       placeholder={selectedTree}
-                      style={{ ...inputStyle, flex: 1 }}
+                      className="input-glass"
+                      style={{ flex: 1 }}
                     />
                     <button
                       onClick={deleteFromDb}
                       disabled={!canUseDb || deleteConfirm !== selectedTree || busy}
                       style={{
-                        padding: '7px 14px',
-                        borderRadius: 6,
-                        border: 'none',
+                        padding: '7px 14px', borderRadius: 6, border: 'none',
                         background: deleteConfirm === selectedTree ? '#c00' : '#eee',
                         color: deleteConfirm === selectedTree ? '#fff' : '#aaa',
                         cursor: deleteConfirm === selectedTree ? 'pointer' : 'default',
-                        fontWeight: 700,
-                        fontSize: 13,
+                        fontWeight: 700, fontSize: 13,
                       }}
                     >
                       Delete
@@ -835,14 +816,15 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
                   value={syncSelectedTree}
                   onChange={(e) => setSyncSelectedTree(e.target.value)}
                   disabled={!canUseDb}
-                  style={{ ...inputStyle, opacity: canUseDb ? 1 : 0.65 }}
+                  className="input-glass"
+                  style={{ width: '100%', opacity: canUseDb ? 1 : 0.65 }}
                 >
                   {(globalTrees.length ? globalTrees : dbTrees).map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
 
               {syncStore.active && (
-                <div style={{ padding: '8px 12px', borderRadius: 6, background: '#e8f5e9', border: '1px solid #a5d6a7', fontSize: 12, color: '#2e7d32' }}>
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(200,255,220,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(50,180,80,0.3)', fontSize: 12, color: '#2e7d32' }}>
                   🔄 Syncing <strong>"{syncStore.syncTreeName}"</strong> — auto-saves and imports every few seconds.
                   {syncStore.lastSyncAt > 0 && (
                     <span style={{ marginLeft: 8, color: '#555' }}>
@@ -853,7 +835,7 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
               )}
 
               {syncStatusMsg && (
-                <div style={{ fontSize: 12, color: '#666', padding: '6px 10px', borderRadius: 5, background: '#f5f5f5' }}>
+                <div style={{ fontSize: 12, color: '#9333ea', padding: '6px 10px', borderRadius: 6, background: 'rgba(243,232,255,0.5)', border: '1px solid rgba(168,85,247,0.2)' }}>
                   {syncStatusMsg}
                 </div>
               )}
@@ -861,7 +843,7 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
               {syncStore.active ? (
                 <button
                   onClick={handleDeactivateSync}
-                  style={{ padding: '10px 0', borderRadius: 7, border: 'none', background: '#e53935', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}
+                  style={{ padding: '10px 0', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#e53935,#b71c1c)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 14, boxShadow: '0 0 16px rgba(229,57,53,0.35)' }}
                 >
                   ⏹ Stop Sync
                 </button>
@@ -869,16 +851,8 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
                 <button
                   onClick={handleActivateSync}
                   disabled={!canUseDb || !syncSelectedTree}
-                  style={{
-                    padding: '10px 0',
-                    borderRadius: 7,
-                    border: 'none',
-                    fontWeight: 700,
-                    fontSize: 14,
-                    background: (canUseDb && syncSelectedTree) ? '#2E7D32' : '#ccc',
-                    color: '#fff',
-                    cursor: (canUseDb && syncSelectedTree) ? 'pointer' : 'default',
-                  }}
+                  className={canUseDb && syncSelectedTree ? 'btn-purple' : 'btn-ghost'}
+                  style={{ padding: '10px 0', width: '100%', opacity: !canUseDb || !syncSelectedTree ? 0.5 : 1 }}
                 >
                   🔄 Start Sync
                 </button>
@@ -887,7 +861,7 @@ export default function DBDialog({ onClose, refreshTreeList, readOnly = false, i
           )}
 
           {status && (
-            <div style={{ padding: '10px 14px', borderRadius: 7, background: status.startsWith('❌') ? '#fee' : '#e8f5e9', fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: status.startsWith('❌') ? 'rgba(255,200,200,0.5)' : 'rgba(200,255,220,0.5)', backdropFilter: 'blur(8px)', border: `1px solid ${status.startsWith('❌') ? 'rgba(220,50,50,0.25)' : 'rgba(50,180,80,0.25)'}`, fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {status}
             </div>
           )}
@@ -925,25 +899,32 @@ function b64ToBlob(b64: string, mimeType = 'image/jpeg'): Blob {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 11,
-  fontWeight: 600,
-  color: '#555',
+  fontWeight: 700,
+  color: '#9333ea',
   display: 'block',
   marginBottom: 3,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
 };
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '7px 10px',
-  borderRadius: 6,
-  border: '1px solid #ccc',
+  borderRadius: 8,
+  border: '1px solid rgba(168,85,247,0.25)',
   fontSize: 13,
   boxSizing: 'border-box',
+  background: 'rgba(255,255,255,0.55)',
+  backdropFilter: 'blur(10px)',
+  outline: 'none',
 };
 const smBtnStyle: React.CSSProperties = {
   padding: '7px 14px',
-  borderRadius: 6,
-  border: '1px solid #ccc',
-  background: '#f5f5f5',
+  borderRadius: 8,
+  border: '1px solid rgba(168,85,247,0.28)',
+  background: 'rgba(255,255,255,0.45)',
+  backdropFilter: 'blur(10px)',
   cursor: 'pointer',
   fontSize: 13,
   fontWeight: 600,
+  color: '#9333ea',
 };

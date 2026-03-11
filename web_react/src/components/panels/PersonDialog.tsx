@@ -111,27 +111,27 @@ export default function PersonDialog({ node: initialNode, onClose }: Props) {
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 3000,
-        background: 'rgba(0,0,0,0.45)', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(30,10,60,0.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div style={{
-        background: '#fff', borderRadius: 14, width: 780, minHeight: 520,
+      <div className="dialog-glass" style={{
+        width: 780, minHeight: 520,
         maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.25)', overflow: 'hidden',
+        overflow: 'hidden',
       }}>
         {/* Header */}
         <div style={{
-          padding: '14px 20px', borderBottom: '1px solid #eee',
+          padding: '14px 20px', borderBottom: '1px solid rgba(168,85,247,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: '#f8f9fa',
+          background: 'rgba(243,232,255,0.35)',
         }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+          <h2 className="grad-text" style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
             👤 {name || '(unnamed)'}
           </h2>
           <button onClick={handleClose}
-            style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#666' }}>
+            style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9333ea' }}>
             ✕
           </button>
         </div>

@@ -39,27 +39,23 @@ export default function SyncStatusPill({ status, isDirty, lastSyncAt, onClick, t
   const timeLabel = (status === 3 || status === 5) && timeStr ? ` · ${timeStr}` : '';
 
   return (
-    <>
-      <style>{`@keyframes syncPulse { 0%,100%{opacity:1} 50%{opacity:0.35} }`}</style>
-      <button
-        onClick={onClick}
-        title={title ?? label}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '4px 12px', borderRadius: 20,
-          border: `1px solid ${cfg.border}`,
-          background: cfg.bg,
-          cursor: onClick ? 'pointer' : 'default',
-          fontSize: 12, color: cfg.text, fontWeight: 600, whiteSpace: 'nowrap',
-        }}
-      >
-        <span style={{
-          width: 8, height: 8, borderRadius: '50%', background: cfg.dot,
-          display: 'inline-block', flexShrink: 0,
-          animation: pulse ? 'syncPulse 1s infinite' : 'none',
-        }} />
-        {label}{timeLabel}
-      </button>
-    </>
+    <button
+      onClick={onClick}
+      title={title ?? label}
+      className="pill"
+      style={{
+        border: `1px solid ${cfg.border}`,
+        background: cfg.bg,
+        cursor: onClick ? 'pointer' : 'default',
+        color: cfg.text,
+      }}
+    >
+      <span style={{
+        width: 8, height: 8, borderRadius: '50%', background: cfg.dot,
+        display: 'inline-block', flexShrink: 0,
+        animation: pulse ? 'syncPulse 1s infinite' : 'none',
+      }} />
+      {label}{timeLabel}
+    </button>
   );
 }

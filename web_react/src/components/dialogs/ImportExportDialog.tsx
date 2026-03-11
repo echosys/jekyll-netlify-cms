@@ -69,16 +69,16 @@ export default function ImportExportDialog({ onClose, refreshTreeList }: Props) 
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(30,10,60,0.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
-      <div style={{ background: '#fff', borderRadius: 14, width: 440, padding: 28, boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
-        <h2 style={{ margin: '0 0 20px', fontSize: 18 }}>📦 ZIP Import / Export</h2>
+      <div className="dialog-glass" style={{ width: 440, padding: 28 }}>
+        <h2 className="grad-text" style={{ margin: '0 0 20px', fontSize: 18 }}>📦 ZIP Import / Export</h2>
 
         <Section title="Import ZIP">
           <p style={{ fontSize: 13, color: '#555', margin: '0 0 12px' }}>
             Import a family tree from a <code>.zip</code> file containing <code>tree.json</code> and a <code>resources/</code> folder.
           </p>
-          <label style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 6, border: '1px solid #1565C0', color: '#1565C0', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+          <label className="btn-ghost" style={{ display: 'inline-block', padding: '8px 16px', cursor: 'pointer' }}>
             📂 Choose ZIP file
             <input ref={fileRef} type="file" accept=".zip" onChange={handleImport} style={{ display: 'none' }} />
           </label>
@@ -91,20 +91,21 @@ export default function ImportExportDialog({ onClose, refreshTreeList }: Props) 
           <button
             onClick={handleExport}
             disabled={!activeTree || exporting}
-            style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: activeTree ? '#1565C0' : '#ccc', color: '#fff', cursor: activeTree ? 'pointer' : 'default', fontWeight: 600, fontSize: 13 }}
+            className={activeTree && !exporting ? 'btn-purple' : 'btn-ghost'}
+            style={{ padding: '8px 16px', opacity: !activeTree || exporting ? 0.5 : 1 }}
           >
             {exporting ? 'Exporting…' : '⬇ Export current tree'}
           </button>
         </Section>
 
         {status && (
-          <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 7, background: status.startsWith('❌') ? '#fee' : '#e8f5e9', fontSize: 13 }}>
+          <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, background: status.startsWith('❌') ? 'rgba(255,200,200,0.5)' : 'rgba(200,255,220,0.5)', backdropFilter: 'blur(6px)', border: `1px solid ${status.startsWith('❌') ? 'rgba(220,50,50,0.25)' : 'rgba(50,180,80,0.25)'}`, fontSize: 13 }}>
             {status}
           </div>
         )}
 
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '8px 20px', borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer' }}>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: '8px 20px' }}>
             Close
           </button>
         </div>
@@ -115,8 +116,8 @@ export default function ImportExportDialog({ onClose, refreshTreeList }: Props) 
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 20, padding: 16, borderRadius: 8, border: '1px solid #eee', background: '#fafafa' }}>
-      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: '#333' }}>{title}</div>
+    <div className="glass grad-border" style={{ marginBottom: 20, padding: 16, borderRadius: 10 }}>
+      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
       {children}
     </div>
   );

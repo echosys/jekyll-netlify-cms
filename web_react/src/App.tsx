@@ -501,19 +501,19 @@ export default function App() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {lockStore.forcedByMsg && (
-          <div style={{ background: '#FFF3E0', borderBottom: '1px solid #FFCC80', padding: '8px 20px', fontSize: 13, color: '#E65100', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ background: 'rgba(255,243,224,0.85)', borderBottom: '1px solid rgba(255,152,0,0.3)', backdropFilter: 'blur(8px)', padding: '8px 20px', fontSize: 13, color: '#E65100', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>⚡ {lockStore.forcedByMsg}</span>
             <button onClick={() => lockStore.clearForcedMsg()} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#E65100', fontWeight: 700, fontSize: 14 }}>✕</button>
           </div>
         )}
         {lockBanner && (
-          <div style={{ background: '#FFF3E0', borderBottom: '1px solid #FFCC80', padding: '8px 20px', fontSize: 13, color: '#E65100', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ background: 'rgba(255,243,224,0.85)', borderBottom: '1px solid rgba(255,152,0,0.3)', backdropFilter: 'blur(8px)', padding: '8px 20px', fontSize: 13, color: '#E65100', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>🔒 {lockBanner}</span>
             <button onClick={() => setLockBanner(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#E65100', fontWeight: 700, fontSize: 14 }}>✕</button>
           </div>
         )}
         {discardNotice && (
-          <div style={{ background: '#E3F2FD', borderBottom: '1px solid #90CAF9', padding: '8px 20px', fontSize: 13, color: '#1565C0' }}>
+          <div style={{ background: 'rgba(243,232,255,0.85)', borderBottom: '1px solid rgba(168,85,247,0.25)', backdropFilter: 'blur(8px)', padding: '8px 20px', fontSize: 13, color: '#7e22ce' }}>
             ↓ Remote changes applied — your local edits were discarded (DB wins)
           </div>
         )}
@@ -521,13 +521,11 @@ export default function App() {
         {activeTree ? (
           <>
             {/* Tab bar */}
-            <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #e0e0e0', background: '#fff', padding: '0 16px', gap: 0, height: 48, flexShrink: 0 }}>
+            <div className="tabbar-glass" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: 0, height: 48, flexShrink: 0 }}>
               {(['canvas', 'resources'] as Tab[]).map((t) => (
-                <button key={t} onClick={() => setTab(t)} style={{
+                <button key={t} onClick={() => setTab(t)} className={tab === t ? 'tab-active' : 'tab-inactive'} style={{
                   padding: '0 18px', height: '100%', border: 'none', background: 'none',
-                  cursor: 'pointer', fontSize: 13, fontWeight: tab === t ? 700 : 400,
-                  color: tab === t ? '#1565C0' : '#666',
-                  borderBottom: tab === t ? '2px solid #1565C0' : '2px solid transparent',
+                  cursor: 'pointer', fontSize: 13,
                 }}>
                   {t === 'canvas' ? '🌳 Tree Canvas' : '📷 Resources'}
                 </button>
@@ -535,20 +533,16 @@ export default function App() {
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 13, color: '#555', fontWeight: 600 }}>
                   {activeTree.tree_name}
-                  {isDirty && <span style={{ color: '#e67e22', marginLeft: 6 }}>●</span>}
+                  {isDirty && <span style={{ color: '#a855f7', marginLeft: 6 }}>●</span>}
                   {activeSyncMode === 'synced' && (
-                    <span style={{ marginLeft: 6, fontSize: 10, color: '#1565C0', fontWeight: 700, background: '#E3F2FD', borderRadius: 4, padding: '1px 6px' }}>DB</span>
+                    <span className="badge-purple" style={{ marginLeft: 6 }}>DB</span>
                   )}
                 </span>
                 {/* Save button — always available; calls syncTick for synced trees */}
                 <button
                   onClick={isSynced ? syncTick : handleSave}
-                  style={{
-                    padding: '5px 14px', borderRadius: 6, border: 'none',
-                    background: isDirty ? '#1565C0' : '#eee',
-                    color: isDirty ? '#fff' : '#aaa',
-                    cursor: 'pointer', fontWeight: 600, fontSize: 12,
-                  }}
+                  className={isDirty ? 'btn-purple' : 'btn-ghost'}
+                  style={{ padding: '5px 14px' }}
                 >
                   💾 Save
                 </button>
@@ -588,7 +582,7 @@ export default function App() {
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#aaa', background: '#f9fafb' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#aaa', background: 'transparent' }}>
             {user && (
               <div style={{ position: 'absolute', top: 12, right: 16 }}>
                 <UserAvatar user={user} onlineUsers={lockStore.onlineUsers} onLogout={handleLogout} />
@@ -597,7 +591,7 @@ export default function App() {
             <div style={{ fontSize: 64, marginBottom: 16 }}>🌳</div>
             <h2 style={{ margin: '0 0 8px', color: '#555' }}>Welcome to FamTree</h2>
             {autoResumeError ? (
-              <div style={{ background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: 8, padding: '12px 18px', fontSize: 13, color: '#c62828', maxWidth: 360, textAlign: 'center', lineHeight: 1.6 }}>
+              <div className="glass grad-border" style={{ borderRadius: 12, padding: '12px 18px', fontSize: 13, color: '#7e22ce', maxWidth: 360, textAlign: 'center', lineHeight: 1.6 }}>
                 ⚠️ {autoResumeError}
                 <br /><span style={{ fontSize: 12, color: '#888', marginTop: 4, display: 'block' }}>Try refreshing or contact your admin.</span>
               </div>
@@ -610,12 +604,10 @@ export default function App() {
             )}
             {!isUser && (
               <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                <button onClick={() => setShowImportExport(true)}
-                  style={{ padding: '10px 22px', borderRadius: 8, border: 'none', background: '#1565C0', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
+                <button onClick={() => setShowImportExport(true)} className="btn-purple" style={{ padding: '10px 22px', fontSize: 14 }}>
                   📦 Import ZIP
                 </button>
-                <button onClick={() => setShowDB(true)}
-                  style={{ padding: '10px 22px', borderRadius: 8, border: '1px solid #ccc', background: '#fff', color: '#333', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
+                <button onClick={() => setShowDB(true)} className="btn-ghost" style={{ padding: '10px 22px', fontSize: 14 }}>
                   🗄 Connect DB
                 </button>
               </div>

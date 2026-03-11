@@ -85,14 +85,11 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
 
       {open && (
         <div
+          className="dialog-glass"
           style={{
             position: 'absolute',
             top: 40,
             right: 0,
-            background: '#fff',
-            border: '1px solid #e0e0e0',
-            borderRadius: 10,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
             padding: '14px 16px',
             minWidth: 210,
             zIndex: 1000,
@@ -106,10 +103,11 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
               <div
                 style={{
                   fontSize: 11,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginTop: 2,
-                  color: user.role === 'dev' ? '#1565C0' : '#2E7D32',
-                  background: user.role === 'dev' ? '#E3F2FD' : '#E8F5E9',
+                  color: user.role === 'dev' ? '#7e22ce' : '#2E7D32',
+                  background: user.role === 'dev' ? 'rgba(243,232,255,0.8)' : '#E8F5E9',
+                  border: `1px solid ${user.role === 'dev' ? 'rgba(168,85,247,0.3)' : '#A5D6A7'}`,
                   display: 'inline-block',
                   borderRadius: 4,
                   padding: '1px 6px',
@@ -123,7 +121,7 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
           {/* Online users */}
           {others.length > 0 && (
             <>
-              <div style={{ fontSize: 11, color: '#999', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: 11, color: '#9333ea', fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                 Also online ({others.length})
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
@@ -144,19 +142,21 @@ export default function UserAvatar({ user, onlineUsers, onLogout }: Props) {
             <div style={{ fontSize: 12, color: '#bbb', marginBottom: 12 }}>No other users online</div>
           )}
 
-          <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '8px 0' }} />
+          <hr style={{ border: 'none', borderTop: '1px solid rgba(168,85,247,0.15)', margin: '8px 0' }} />
           <button
             onClick={onLogout}
             style={{
               width: '100%',
               padding: '7px 0',
-              border: 'none',
-              background: '#fafafa',
-              borderRadius: 6,
+              border: '1px solid rgba(168,85,247,0.2)',
+              background: 'rgba(255,255,255,0.5)',
+              borderRadius: 8,
               cursor: 'pointer',
               fontSize: 13,
-              color: '#c62828',
+              color: '#9333ea',
               fontWeight: 600,
+              backdropFilter: 'blur(8px)',
+              transition: 'background 0.2s',
             }}
           >
             Sign out

@@ -51,9 +51,10 @@ export default function LockButton({
         title="Release the write lock"
         style={{
           ...BASE,
-          borderColor: '#FFCC80',
-          background: '#FFF3E0',
-          color: '#E65100',
+          borderColor: 'rgba(168,85,247,0.35)',
+          background: 'rgba(243,232,255,0.7)',
+          color: '#7e22ce',
+          backdropFilter: 'blur(8px)',
         }}
       >
         🔓 Release Lock · {lockCountdown}s
@@ -82,9 +83,10 @@ export default function LockButton({
             title={`Force-take lock from ${lockHolder}`}
             style={{
               ...BASE,
-              borderColor: '#CE93D8',
-              background: '#F3E5F5',
-              color: '#6A1B9A',
+              borderColor: 'rgba(168,85,247,0.4)',
+              background: 'rgba(243,232,255,0.65)',
+              color: '#7e22ce',
+              backdropFilter: 'blur(8px)',
             }}
           >
             ⚡ Force Take
@@ -101,9 +103,11 @@ export default function LockButton({
       title="Request write lock to save changes to DB"
       style={{
         ...BASE,
-        borderColor: '#90CAF9',
-        background: '#E3F2FD',
-        color: '#1565C0',
+        borderColor: 'rgba(168,85,247,0.35)',
+        background: 'rgba(243,232,255,0.55)',
+        color: '#9333ea',
+        backdropFilter: 'blur(8px)',
+        transition: 'background 0.2s, box-shadow 0.2s',
       }}
     >
       🔒 Request Lock
