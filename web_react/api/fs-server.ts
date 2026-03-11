@@ -125,7 +125,8 @@ async function handleHealth(res: ServerResponse): Promise<void> {
       const { MongoClient } = await import('mongodb');
       const client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 4000, connectTimeoutMS: 4000 });
       await client.connect();
-      await client.db('famt_login').command({ ping: 1 });
+      const dbName = new URL(mongoUri).pathname.replace(/^\//, '') || 'admin';
+      await client.db(dbName).command({ ping: 1 });
       await client.close();
       result.mongo = 'ok';
     } catch (e: unknown) {
@@ -432,6 +433,7 @@ const server = http.createServer(async (req, res) => {
     if (url === '/api/fs/dev-conn-has' && method === 'GET') return handleDevConnHas(res);
     if (url === '/api/fs/user-conn' && method === 'GET') return handleUserConn(res);
     if (url === '/api/fs/health' && method === 'GET') return handleHealth(res);
+    if (url === '/api/health'    && method === 'GET') return handleHealth(res);  // mirrors Vercel /api/health
     if (method === 'GET' && url.startsWith('/api/fs/dev-conn?')) {
       const params = new URLSearchParams(url.split('?')[1] ?? '');
       return handleDevConnGet(res, params.get('h') ?? '');

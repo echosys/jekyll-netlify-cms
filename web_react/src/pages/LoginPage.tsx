@@ -95,7 +95,7 @@ export default function LoginPage() {
     let cancelled = false;
     const check = async () => {
       try {
-        const res = await fetch('/api/fs/health');
+        const res = await fetch('/api/health');
         if (!res.ok) { if (!cancelled) setHealth({ mongo: 'error', pg: 'error', mongoError: `HTTP ${res.status}`, pgError: `HTTP ${res.status}` }); return; }
         const d = await res.json();
         if (!cancelled) setHealth({
