@@ -432,6 +432,7 @@ const server = http.createServer(async (req, res) => {
     // DEV connection string endpoints
     if (url === '/api/fs/dev-conn-has' && method === 'GET') return handleDevConnHas(res);
     if (url === '/api/fs/user-conn' && method === 'GET') return handleUserConn(res);
+    if (url === '/api/user-conn'    && method === 'GET') return handleUserConn(res);  // mirrors Vercel /api/user-conn
     if (url === '/api/fs/health' && method === 'GET') return handleHealth(res);
     if (url === '/api/health'    && method === 'GET') return handleHealth(res);  // mirrors Vercel /api/health
     if (method === 'GET' && url.startsWith('/api/fs/dev-conn?')) {

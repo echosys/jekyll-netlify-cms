@@ -172,7 +172,7 @@ export default function LoginPage() {
     let connString = '';
     let pgSslEnv = '';
     try {
-      const envRes = await fetch('/api/fs/user-conn');
+      const envRes = await fetch('/api/user-conn');
       if (envRes.ok) {
         const envData = await envRes.json();
         connString = envData.conn ?? '';
