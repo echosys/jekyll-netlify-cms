@@ -13,6 +13,30 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { IncomingMessage, ServerResponse } from 'http';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ── Load .env.local into process.env BEFORE importing any handlers ────────────
+// This ensures MONGO_URI, VITE_PG_CONN etc. are available to all handlers
+// that read process.env directly (mongo-helpers, pg-helpers, etc.)
+const ENV_LOCAL_PATH = path.resolve(__dirname, '../.env.local');
+(function loadEnvLocal() {
+  try {
+    const lines = fs.readFileSync(ENV_LOCAL_PATH, 'utf8').split('\n');
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const eq = line.indexOf('=');
+      if (eq < 1) continue;
+      const key = line.slice(0, eq).trim();
+      const val = line.slice(eq + 1).trim();
+      if (key && !(key in process.env)) {
+        process.env[key] = val;
+      }
+    }
+  } catch { /* .env.local not found — ok in production */ }
+})();
+
 // ── Import the same pg handlers used by Vercel ────────────────────────────────
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import pgTest from './pg-test.js';
@@ -20,9 +44,9 @@ import pgList from './pg-list.js';
 import pgExport from './pg-export.js';
 import pgImport from './pg-import.js';
 import pgDelete from './pg-delete.js';
+import mongoLogin from './mongo-login.js';
+import mongoLock from './mongo-lock.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const PORT = 3001;
 // FamilyTrees_react/ lives at the workspace root (two levels up from web_react/api/)
@@ -53,7 +77,7 @@ function notFound(res: ServerResponse) {
 }
 
 // ── .env.local helpers ────────────────────────────────────────────────────────
-const ENV_LOCAL_PATH = path.resolve(__dirname, '../.env.local');
+// ENV_LOCAL_PATH is declared at the top of this file
 
 /** Read all lines from .env.local, return as array */
 function readEnvLines(): string[] {
@@ -77,6 +101,72 @@ function getEnvVar(key: string): string {
     if (trimmed.startsWith(key + '=')) return trimmed.slice(key.length + 1);
   }
   return process.env[key] ?? '';
+}
+
+/** Handle GET /api/fs/user-conn — return VITE_PG_CONN for authenticated "user" role (no passphrase needed) */
+function handleUserConn(res: ServerResponse): void {
+  const conn = getEnvVar('VITE_PG_CONN') || process.env['VITE_PG_CONN'] || '';
+  if (!conn) { json(res, { error: 'No PG connection configured on this server.' }, 404); return; }
+  const pgSsl = getEnvVar('VITE_PG_SSL') || process.env['VITE_PG_SSL'] || '';
+  json(res, { conn, pgSsl });
+}
+
+/** Handle GET /api/fs/health — check MongoDB and PostgreSQL connectivity for login page status */
+async function handleHealth(res: ServerResponse): Promise<void> {
+  const result: { mongo: 'ok' | 'error' | 'unconfigured'; pg: 'ok' | 'error' | 'unconfigured'; mongoError?: string; pgError?: string } = {
+    mongo: 'unconfigured',
+    pg: 'unconfigured',
+  };
+
+  // Check MongoDB
+  const mongoUri = getEnvVar('MONGO_URI') || process.env['MONGO_URI'] || '';
+  if (mongoUri) {
+    try {
+      const { MongoClient } = await import('mongodb');
+      const client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 4000, connectTimeoutMS: 4000 });
+      await client.connect();
+      await client.db('famt_login').command({ ping: 1 });
+      await client.close();
+      result.mongo = 'ok';
+    } catch (e: unknown) {
+      result.mongo = 'error';
+      result.mongoError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  // Check PostgreSQL (parse VITE_PG_CONN)
+  const pgConn = getEnvVar('VITE_PG_CONN') || process.env['VITE_PG_CONN'] || '';
+  if (pgConn) {
+    try {
+      const { Pool } = await import('pg');
+      const url = new URL(pgConn);
+      const pgSslEnv = (getEnvVar('VITE_PG_SSL') || process.env['VITE_PG_SSL'] || '').toLowerCase();
+      const sslDisabled = pgSslEnv === 'no' || pgSslEnv === 'disable' || pgSslEnv === 'false' || pgSslEnv === '0';
+      const sslRequired = pgSslEnv === 'require' || pgSslEnv === 'yes' || pgSslEnv === 'true' || pgSslEnv === '1';
+      const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+      // omit ssl key entirely when disabled — passing ssl:false can still negotiate in some pg versions
+      const sslValue = sslDisabled ? undefined : sslRequired ? { rejectUnauthorized: false } : isLocal ? undefined : { rejectUnauthorized: false };
+      const pool = new Pool({
+        host: url.hostname,
+        port: parseInt(url.port) || 5432,
+        database: url.pathname.replace(/^\//, ''),
+        user: url.username,
+        password: decodeURIComponent(url.password),
+        max: 1,
+        connectionTimeoutMillis: 4000,
+        ...(sslValue !== undefined ? { ssl: sslValue } : {}),
+      });
+      const client = await pool.connect();
+      client.release();
+      await pool.end();
+      result.pg = 'ok';
+    } catch (e: unknown) {
+      result.pg = 'error';
+      result.pgError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  json(res, result);
 }
 
 /** Handle GET /api/fs/dev-conn — return plain conn string if passphrase matches (base64 compare) */
@@ -340,6 +430,8 @@ const server = http.createServer(async (req, res) => {
 
     // DEV connection string endpoints
     if (url === '/api/fs/dev-conn-has' && method === 'GET') return handleDevConnHas(res);
+    if (url === '/api/fs/user-conn' && method === 'GET') return handleUserConn(res);
+    if (url === '/api/fs/health' && method === 'GET') return handleHealth(res);
     if (method === 'GET' && url.startsWith('/api/fs/dev-conn?')) {
       const params = new URLSearchParams(url.split('?')[1] ?? '');
       return handleDevConnGet(res, params.get('h') ?? '');
@@ -372,6 +464,10 @@ const server = http.createServer(async (req, res) => {
     if (url === '/api/pg-export') return callVercelHandler(pgExport, req, res);
     if (url === '/api/pg-import') return callVercelHandler(pgImport, req, res);
     if (url === '/api/pg-delete') return callVercelHandler(pgDelete, req, res);
+
+    // /api/mongo-* — MongoDB auth + lock handlers
+    if (url === '/api/mongo-login') return callVercelHandler(mongoLogin, req, res);
+    if (url === '/api/mongo-lock')  return callVercelHandler(mongoLock, req, res);
 
     notFound(res);
   } catch (err: any) {

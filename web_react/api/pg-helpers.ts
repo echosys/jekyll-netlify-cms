@@ -16,14 +16,14 @@ export interface ConnPayload {
 
 export function makePool(conn: ConnPayload): Pool {
   const sslMode = conn.sslMode ?? 'auto';
-  let ssl: PoolConfig['ssl'];
+  let ssl: PoolConfig['ssl'] | undefined;
   if (sslMode === 'disable') {
-    ssl = false;
+    ssl = undefined; // omit ssl key entirely — forces plaintext connection
   } else if (sslMode === 'require') {
     ssl = { rejectUnauthorized: false };
   } else {
     const isLocal = conn.host === 'localhost' || conn.host === '127.0.0.1';
-    ssl = isLocal ? false : { rejectUnauthorized: false };
+    ssl = isLocal ? undefined : { rejectUnauthorized: false };
   }
   const config: PoolConfig = {
     host: conn.host,
@@ -34,7 +34,7 @@ export function makePool(conn: ConnPayload): Pool {
     max: 1,
     idleTimeoutMillis: 5000,
     connectionTimeoutMillis: 10000,
-    ssl,
+    ...(ssl !== undefined ? { ssl } : {}),
   };
   return new Pool(config);
 }

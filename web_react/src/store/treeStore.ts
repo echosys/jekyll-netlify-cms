@@ -15,6 +15,9 @@ export interface TreeMeta {
   treeName: string;
 }
 
+/** Whether a tree is only local or DB-linked */
+export type TreeSyncMode = 'local' | 'synced';
+
 interface TreeState {
 
   // ─── Tree list ───────────────────────────────────────────────────────────
@@ -24,6 +27,8 @@ interface TreeState {
   // ─── Active tree ─────────────────────────────────────────────────────────
   activeTree: Tree | null;
   activeFolder: string | null; // folder slug
+  /** Whether the active tree is local-only or linked to DB */
+  activeSyncMode: TreeSyncMode;
   isDirty: boolean;
 
   // ─── Undo/redo ───────────────────────────────────────────────────────────
@@ -31,7 +36,7 @@ interface TreeState {
   redoStack: Tree[];
 
   // ─── Actions ─────────────────────────────────────────────────────────────
-  openTree: (tree: Tree, folderName: string) => void;
+  openTree: (tree: Tree, folderName: string, syncMode?: TreeSyncMode) => void;
   closeTree: () => void;
 
   /** Snapshot current state onto undoStack then apply mutation */
@@ -68,14 +73,16 @@ export const useTreeStore = create<TreeState>((set, get) => ({
 
   activeTree: null,
   activeFolder: null,
+  activeSyncMode: 'local',
   isDirty: false,
   undoStack: [],
   redoStack: [],
 
-  openTree: (tree, folderName) =>
+  openTree: (tree, folderName, syncMode = 'local') =>
     set({
       activeTree: tree,
       activeFolder: folderName,
+      activeSyncMode: syncMode,
       isDirty: false,
       undoStack: [],
       redoStack: [],
@@ -85,6 +92,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     set({
       activeTree: null,
       activeFolder: null,
+      activeSyncMode: 'local',
       isDirty: false,
       undoStack: [],
       redoStack: [],

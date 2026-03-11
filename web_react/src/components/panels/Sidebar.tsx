@@ -6,12 +6,14 @@ import ReactDOM from 'react-dom';
 import { useTreeStore, type TreeMeta } from '../../store/treeStore';
 import { listTrees, loadTree, createTree, deleteTree, getStorageSummary, type StorageSummary } from '../../db/storageAdapter';
 import { STORAGE_MODE } from '../../appConfig';
+import { useAuthStore } from '../../store/authStore';
+import { useSyncStore } from '../../store/syncStore';
 import { makeTree } from '../../models/types';
 import { slugify } from '../../utils/zip';
 
 interface Props {
-  onOpenImportExport: () => void;
-  onOpenDB: () => void;
+  onOpenImportExport?: () => void;
+  onOpenDB?: () => void;
 }
 
 function fmtBytes(b: number): string {
@@ -26,6 +28,10 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
     activeFolder, openTree, closeTree,
     isDirty,
   } = useTreeStore();
+  const { user } = useAuthStore();
+  const syncStore = useSyncStore();
+  const activeSyncMode = useTreeStore((s) => s.activeSyncMode);
+  const isUser = user?.role === 'user';
 
   const [newTreeName, setNewTreeName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -33,15 +39,19 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
   const [showStorageBreakdown, setShowStorageBreakdown] = useState(false);
   const [loadingStorage, setLoadingStorage] = useState(false);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    // User role: skip reading local storage on mount — the DB auto-sync will
+    // populate treeList via openTree + setTreeList.  This prevents stale
+    // IndexedDB data from overriding the DB-sourced tree.
+    if (!isUser) refresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const refresh = async () => {
     try {
       const list = await listTrees();
       setTreeList(list);
-    } catch {
-      setTreeList([]);
-    }
+    } catch { /* ignore */ setTreeList([]); }
   };
 
   const loadStorageSize = useCallback(async () => {
@@ -49,20 +59,23 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
     try {
       const summary = await getStorageSummary();
       setStorageSummary(summary);
-    } catch {}
+    } catch { /* ignore */ }
     setLoadingStorage(false);
   }, []);
 
-  // Load storage size on mount and whenever tree list changes
-  useEffect(() => { loadStorageSize(); }, [treeList.length]);
+  // Load storage size on mount and whenever tree list changes (dev role only)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!isUser) loadStorageSize(); }, [treeList.length]);
 
   const handleOpenTree = async (meta: TreeMeta) => {
     if (isDirty && !confirm('You have unsaved changes. Open another tree anyway?')) return;
     try {
       const tree = await loadTree(meta.folderName);
-      openTree(tree, meta.folderName);
-    } catch (err: any) {
-      alert(`Failed to open tree: ${err.message}`);
+      // For user role, all trees are synced; for dev role, default to local
+      const syncMode = isUser || !!syncStore.syncedTrees[meta.folderName] ? 'synced' : 'local';
+      openTree(tree, meta.folderName, syncMode as import('../../store/treeStore').TreeSyncMode);
+    } catch (err) {
+      alert(`Failed to open tree: ${(err as Error).message}`);
     }
   };
 
@@ -76,8 +89,8 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
       openTree(tree, folderName);
       setNewTreeName('');
       setCreating(false);
-    } catch (err: any) {
-      alert(`Failed to create tree: ${err.message}`);
+    } catch (err) {
+      alert(`Failed to create tree: ${(err as Error).message}`);
     }
   };
 
@@ -87,8 +100,8 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
       await deleteTree(meta.folderName);
       if (activeFolder === meta.folderName) closeTree();
       setTreeList(treeList.filter((t) => t.folderName !== meta.folderName));
-    } catch (err: any) {
-      alert(`Failed to delete: ${err.message}`);
+    } catch (err) {
+      alert(`Failed to delete: ${(err as Error).message}`);
     }
   };
 
@@ -111,123 +124,165 @@ export default function Sidebar({ onOpenImportExport, onOpenDB }: Props) {
         <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>Family Tree App</div>
       </div>
 
-      {/* Storage mode badge + size */}
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid #eee', background: storageBadge.color }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 4 }}>WORKING STORAGE</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-          <div style={{
-            display: 'inline-block', padding: '3px 10px', borderRadius: 12,
-            border: `1px solid ${storageBadge.border}`, fontSize: 11,
-            fontWeight: 700, color: storageBadge.text,
-          }}>
-            {storageBadge.label}
+      {/* Storage mode badge + size — dev only */}
+      {!isUser && (
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid #eee', background: storageBadge.color }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 4 }}>WORKING STORAGE</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+            <div style={{
+              display: 'inline-block', padding: '3px 10px', borderRadius: 12,
+              border: `1px solid ${storageBadge.border}`, fontSize: 11,
+              fontWeight: 700, color: storageBadge.text,
+            }}>
+              {storageBadge.label}
+            </div>
+            {/* Clickable size pill */}
+            <button
+              onClick={() => { loadStorageSize(); setShowStorageBreakdown(true); }}
+              title="Click to see storage breakdown"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '3px 8px', borderRadius: 10,
+                border: `1px solid ${storageBadge.border}`,
+                background: 'rgba(255,255,255,0.6)',
+                cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                color: storageBadge.text,
+              }}
+            >
+              💾 {totalStr}
+            </button>
           </div>
-          {/* Clickable size pill */}
-          <button
-            onClick={() => { loadStorageSize(); setShowStorageBreakdown(true); }}
-            title="Click to see storage breakdown"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '3px 8px', borderRadius: 10,
-              border: `1px solid ${storageBadge.border}`,
-              background: 'rgba(255,255,255,0.6)',
-              cursor: 'pointer', fontSize: 11, fontWeight: 700,
-              color: storageBadge.text,
-            }}
-          >
-            💾 {totalStr}
-          </button>
+          {STORAGE_MODE === 'filesystem' && (
+            <div style={{ fontSize: 10, color: '#888', marginTop: 3 }}>
+              FamilyTrees_react/ on disk
+            </div>
+          )}
         </div>
-        {STORAGE_MODE === 'filesystem' && (
-          <div style={{ fontSize: 10, color: '#888', marginTop: 3 }}>
-            FamilyTrees_react/ on disk
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Tree list header */}
       <div style={{ padding: '10px 12px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#555' }}>MY TREES</span>
-        <button onClick={refresh} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#999' }}>↻</button>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#555' }}>
+          {isUser ? 'YOUR TREE' : 'MY TREES'}
+        </span>
+        {!isUser && (
+          <button onClick={refresh} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#999' }}>↻</button>
+        )}
       </div>
 
       {/* Tree list */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {treeList.length === 0 && (
           <div style={{ padding: '12px 16px', fontSize: 12, color: '#aaa' }}>
-            No trees yet. Import a ZIP, connect to DB, or create a new one.
+            {isUser ? 'Loading your tree…' : 'No trees yet. Import a ZIP, connect to DB, or create a new one.'}
           </div>
         )}
-        {treeList.map((meta) => (
+        {treeList.map((meta) => {
+          const isActive = activeFolder === meta.folderName;
+          // A tree is "DB-synced" (delete disabled) only when actively syncing.
+          // syncedTrees map persists even after deactivate(), so we must also
+          // check syncStore.active for the currently active tree.
+          const isSynced = isUser
+            ? true   // user role: always synced
+            : isActive
+              ? (syncStore.active && activeSyncMode === 'synced')  // active tree: requires live sync
+              : !!syncStore.syncedTrees[meta.folderName] && syncStore.active; // other trees: map + active
+          // User role: trees are clickable to switch view
+          const clickable = isUser || !isUser;
+          return (
           <div
             key={meta.folderName}
-            onClick={() => handleOpenTree(meta)}
+            onClick={clickable ? () => handleOpenTree(meta) : undefined}
             style={{
-              padding: '9px 14px', cursor: 'pointer', display: 'flex',
+              padding: '9px 14px', cursor: clickable ? 'pointer' : 'default', display: 'flex',
               alignItems: 'center', justifyContent: 'space-between',
-              background: activeFolder === meta.folderName ? '#E3F2FD' : 'transparent',
-              borderLeft: activeFolder === meta.folderName ? '3px solid #1565C0' : '3px solid transparent',
+              background: isActive ? '#E3F2FD' : 'transparent',
+              borderLeft: isActive ? '3px solid #1565C0' : '3px solid transparent',
               borderBottom: '1px solid #f0f0f0',
             }}
-            onMouseEnter={(e) => { if (activeFolder !== meta.folderName) e.currentTarget.style.background = '#f5f5f5'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = activeFolder === meta.folderName ? '#E3F2FD' : 'transparent'; }}
+            onMouseEnter={(e) => { if (clickable && !isActive) e.currentTarget.style.background = '#f5f5f5'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = isActive ? '#E3F2FD' : 'transparent'; }}
           >
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 13, fontWeight: activeFolder === meta.folderName ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 13, fontWeight: isActive ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5 }}>
                 {meta.treeName}
+                {isSynced && (
+                  <span style={{ fontSize: 9, color: '#1565C0', fontWeight: 700, background: '#E3F2FD', borderRadius: 3, padding: '1px 4px', flexShrink: 0 }}>DB</span>
+                )}
               </div>
               <div style={{ fontSize: 10, color: '#aaa', marginTop: 1 }}>{meta.folderName}</div>
             </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleDeleteTree(meta); }}
-              title="Delete tree"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 14, padding: '2px 4px' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#c00')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#ccc')}
-            >
-              🗑
-            </button>
+            {/* Delete button — dev only, local trees only */}
+            {!isUser && !isSynced && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDeleteTree(meta); }}
+                title="Delete tree"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 14, padding: '2px 4px' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#c00')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#ccc')}
+              >
+                🗑
+              </button>
+            )}
+            {/* Greyed-out delete for synced/user trees */}
+            {!isUser && isSynced && (
+              <button
+                disabled
+                title="Cannot delete a DB-synced tree here — use the PostgreSQL dialog"
+                style={{ background: 'none', border: 'none', cursor: 'not-allowed', color: '#e0e0e0', fontSize: 14, padding: '2px 4px' }}
+              >
+                🗑
+              </button>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* New tree form */}
-      {creating ? (
-        <div style={{ padding: '10px 12px', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <input
-            autoFocus
-            value={newTreeName}
-            onChange={(e) => setNewTreeName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTree(); if (e.key === 'Escape') setCreating(false); }}
-            placeholder="Tree name…"
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 13 }}
-          />
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={handleCreateTree} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: '#1565C0', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
-              Create
-            </button>
-            <button onClick={() => setCreating(false)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer', fontSize: 12 }}>
-              Cancel
-            </button>
+      {/* New tree form — dev only */}
+      {!isUser && (
+        creating ? (
+          <div style={{ padding: '10px 12px', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <input
+              autoFocus
+              value={newTreeName}
+              onChange={(e) => setNewTreeName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTree(); if (e.key === 'Escape') setCreating(false); }}
+              placeholder="Tree name…"
+              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 13 }}
+            />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={handleCreateTree} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: '#1565C0', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+                Create
+              </button>
+              <button onClick={() => setCreating(false)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer', fontSize: 12 }}>
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <button onClick={() => setCreating(true)} style={{ margin: '8px 12px', padding: '8px 0', borderRadius: 6, border: '1px dashed #1565C0', color: '#1565C0', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-          + New Tree
-        </button>
+        ) : (
+          <button onClick={() => setCreating(true)} style={{ margin: '8px 12px', padding: '8px 0', borderRadius: 6, border: '1px dashed #1565C0', color: '#1565C0', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            + New Tree
+          </button>
+        )
       )}
 
-      {/* Import/Export buttons */}
-      <div style={{ padding: '8px 12px', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <button onClick={onOpenImportExport}
-          style={{ padding: '7px 0', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#333' }}>
-          📦 ZIP Import / Export
-        </button>
-        <button onClick={onOpenDB}
-          style={{ padding: '7px 0', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#333' }}>
-          🗄 PostgreSQL
-        </button>
-      </div>
+      {/* Import/Export buttons — dev only */}
+      {!isUser && (
+        <div style={{ padding: '8px 12px', borderTop: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button onClick={onOpenImportExport}
+            style={{ padding: '7px 0', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#333' }}>
+            📦 ZIP Import / Export
+          </button>
+          {onOpenDB && (
+            <button onClick={onOpenDB}
+              style={{ padding: '7px 0', borderRadius: 6, border: '1px solid #ddd', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#333' }}>
+              🗄 PostgreSQL
+            </button>
+          )}
+        </div>
+      )}
+
 
       {/* Storage breakdown modal — portalled to body */}
       {showStorageBreakdown && ReactDOM.createPortal(

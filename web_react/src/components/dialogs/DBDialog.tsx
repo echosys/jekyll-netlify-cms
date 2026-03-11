@@ -1,7 +1,7 @@
 /**
  * DBDialog.tsx — PostgreSQL import/export + live-sync dialog.
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import { useTreeStore } from '../../store/treeStore';
 import { useSyncStore } from '../../store/syncStore';
 import { uploadImage, createTree, getImagesAsBase64 } from '../../db/storageAdapter';
@@ -53,6 +53,10 @@ const defaultConn: ConnParams = {
 interface Props {
   onClose: () => void;
   refreshTreeList: () => void;
+  /** When true (user role): all inputs/buttons disabled — view only */
+  readOnly?: boolean;
+  /** Which tab to open on mount — defaults to 'export' */
+  initialTab?: 'export' | 'import' | 'sync';
 }
 
 function saveRecentConn(conn: ConnParams): SavedConn[] {
@@ -70,14 +74,14 @@ function saveRecentConn(conn: ConnParams): SavedConn[] {
   };
   const existing = loadRecentConns().filter((s) => s.label !== entry.label);
   const next = [entry, ...existing].slice(0, MAX_RECENT);
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
   return next;
 }
 
 function loadRecentConns(): SavedConn[] {
   try {
-    const raw: any[] = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]');
-    return raw.map((s) => ({ ...s, credObfuscated: s.credObfuscated ?? s.pwObfuscated ?? '' }));
+    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') as SavedConn[];
+    return raw.map((s) => ({ ...s, credObfuscated: s.credObfuscated ?? '' }));
   } catch {
     return [];
   }
@@ -155,7 +159,7 @@ async function safeFetch(url: string, body: unknown): Promise<{ ok: boolean; dat
   return { ok: true, data, errorMsg: '' };
 }
 
-export default function DBDialog({ onClose, refreshTreeList }: Props) {
+export default function DBDialog({ onClose, refreshTreeList, readOnly = false, initialTab = 'export' }: Props) {
   const activeTree = useTreeStore((s) => s.activeTree);
   const activeFolder = useTreeStore((s) => s.activeFolder);
   const { openTree } = useTreeStore();
@@ -175,7 +179,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
   const [dbTrees, setDbTrees] = useState<string[]>([]);
   const [selectedTree, setSelectedTree] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [tab, setTab] = useState<'export' | 'import' | 'sync'>('export');
+  const [tab, setTab] = useState<'export' | 'import' | 'sync'>(initialTab);
   const [recentConns, setRecentConns] = useState<SavedConn[]>(loadRecentConns);
   const [globalTrees, setGlobalTrees] = useState<string[]>([]);
   const [countdown, setCountdown] = useState(POLL_SECONDS);
@@ -188,8 +192,8 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
   useEffect(() => { connRef.current = conn; }, [conn]);
 
   const isConnected = syncStore.connected || syncStore.active;
-  const canUseDb = isConnected && syncStore.connStatus !== 'error';
-  const fieldsLocked = isConnected;
+  const canUseDb = !readOnly && isConnected && syncStore.connStatus !== 'error';
+  const fieldsLocked = readOnly || isConnected;
 
   const credword = 'pa' + 'ss' + 'word';
   const credInputType = showPw ? 'text' : credword;
@@ -214,7 +218,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
 
     try {
       const url = new URL(raw.replace(/^postgres:\/\//, 'postgresql://'));
-      const urlCred = decodeURIComponent((url as any)[credKey] ?? '');
+      const urlCred = decodeURIComponent((url as unknown as Record<string, string>)[credKey] ?? '');
       const search = new URLSearchParams(url.search);
       const sslParam = search.get('sslmode');
       const sslMode: ConnParams['sslMode'] =
@@ -277,7 +281,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
     setBusy(false);
   };
 
-  const listDbTrees = useCallback(async () => {
+  const listDbTrees = async () => {
     setBusy(true);
     setStatus('Fetching tree list...');
     const { ok, data, errorMsg } = await safeFetch('/api/pg-list', connPayload());
@@ -292,7 +296,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
       syncStore.setConnStatus('error');
     }
     setBusy(false);
-  }, [conn, syncStore]);
+  };
 
   const connectDb = async () => {
     setBusy(true);
@@ -376,6 +380,14 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
       return;
     }
 
+    // Apply VITE_PG_SSL override (takes priority over any sslmode= in the URL)
+    const pgSslEnv = ((import.meta.env.VITE_PG_SSL as string | undefined) ?? '').toLowerCase();
+    if (pgSslEnv === 'no' || pgSslEnv === 'disable' || pgSslEnv === 'false' || pgSslEnv === '0') {
+      parsed.sslMode = 'disable';
+    } else if (pgSslEnv === 'require' || pgSslEnv === 'yes' || pgSslEnv === 'true' || pgSslEnv === '1') {
+      parsed.sslMode = 'require';
+    }
+
     setConn(parsed);
     setStatus('✅ DEV connection loaded into fields.');
   };
@@ -433,7 +445,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
     await createTree(folderName, tree);
     openTree(tree, folderName);
     refreshTreeList();
-    try { localStorage.setItem(LAST_IMPORT_TREE_KEY, selectedTree); } catch {}
+    try { localStorage.setItem(LAST_IMPORT_TREE_KEY, selectedTree); } catch { /* ignore */ }
     setStatus(`✅ Imported "${tree.tree_name}".`);
     setBusy(false);
   };
@@ -461,22 +473,16 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
     if (!canUseDb) { setSyncStatusMsg('Connect first.'); return; }
     if (!syncSelectedTree) { setSyncStatusMsg('Select a tree first.'); return; }
 
-    syncStore.activate(
-      {
-        host: conn.host,
-        port: conn.port,
-        dbname: conn.dbname,
-        user: conn.user,
-        credphrase: conn.credphrase,
-        sslMode: conn.sslMode,
-        schema: conn.schema,
-        table: conn.table,
-        connectionString: conn.connectionString,
-      },
-      syncSelectedTree,
-    );
+    const syncConn = {
+      host: conn.host, port: conn.port, dbname: conn.dbname, user: conn.user,
+      credphrase: conn.credphrase, sslMode: conn.sslMode, schema: conn.schema,
+      table: conn.table, connectionString: conn.connectionString,
+    };
+    // folderName = slug of current local active tree (or slug of db tree name)
+    const folderName = activeFolder ?? slugify(syncSelectedTree);
+    syncStore.activate(folderName, syncConn, syncSelectedTree);
 
-    try { localStorage.setItem(LAST_SYNC_TREE_KEY, syncSelectedTree); } catch {}
+    try { localStorage.setItem(LAST_SYNC_TREE_KEY, syncSelectedTree); } catch { /* ignore */ }
     persistConn();
     onClose();
   };
@@ -513,13 +519,15 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
       try { return localStorage.getItem(LAST_IMPORT_TREE_KEY) ?? ''; } catch { return ''; }
     })();
     const nextImport = pickDefaultTree(trees, [selectedTree, lastImport, syncStore.syncTreeName, activeTree?.tree_name ?? '']);
-    if (nextImport !== selectedTree) setSelectedTree(nextImport);
-
     const lastSync = (() => {
       try { return localStorage.getItem(LAST_SYNC_TREE_KEY) ?? ''; } catch { return ''; }
     })();
     const nextSync = pickDefaultTree(trees, [syncSelectedTree, syncStore.syncTreeName, lastSync, activeTree?.tree_name ?? '']);
-    if (nextSync !== syncSelectedTree) setSyncSelectedTree(nextSync);
+
+    startTransition(() => {
+      if (nextImport !== selectedTree) setSelectedTree(nextImport);
+      if (nextSync !== syncSelectedTree) setSyncSelectedTree(nextSync);
+    });
   }, [globalTrees, dbTrees, selectedTree, syncSelectedTree, syncStore.syncTreeName, activeTree?.tree_name, pickDefaultTree]);
 
   useEffect(() => {
@@ -571,6 +579,11 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
         </div>
 
         <div style={{ overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {readOnly && (
+            <div style={{ padding: '8px 14px', borderRadius: 6, background: '#FFF3E0', border: '1px solid #FFCC80', fontSize: 12, color: '#E65100', fontWeight: 600 }}>
+              🔒 View only — you are connected as a <strong>user</strong>. Connection settings and tree operations are managed by your admin.
+            </div>
+          )}
           {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
             <div style={{ padding: '8px 12px', borderRadius: 6, background: '#fff8e1', border: '1px solid #ffe082', fontSize: 12, color: '#5d4037' }}>
               💡 <strong>Local dev:</strong> Use <code style={{ background: '#f5f5f5', padding: '1px 4px', borderRadius: 3 }}>npm run dev:all</code> — PostgreSQL calls need the API server on port 3001.
@@ -608,7 +621,7 @@ export default function DBDialog({ onClose, refreshTreeList }: Props) {
                     <button
                       onClick={() => {
                         const next = recentConns.filter((_, idx) => idx !== i);
-                        try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
+                        try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
                         setRecentConns(next);
                       }}
                       style={{ padding: '4px 8px', borderRadius: 5, border: 'none', background: '#fee', color: '#c00', cursor: 'pointer', fontSize: 11 }}

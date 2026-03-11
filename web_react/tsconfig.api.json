@@ -13,5 +13,5 @@
     "noEmit": true,
     "composite": true
   },
-  "include": ["api/pg-*.ts"]
+  "include": ["api/pg-*.ts", "api/mongo-*.ts"]
 }
