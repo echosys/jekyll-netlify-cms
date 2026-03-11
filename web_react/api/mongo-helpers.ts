@@ -48,7 +48,9 @@ export async function getMongoDb(): Promise<Db> {
     _client = new MongoClient(uri);
     await _client.connect();
   }
-  return _client.db('famt_login');
+  // derive db name from the URI path (e.g. /famt_login → famt_login)
+  const dbName = new URL(uri).pathname.replace(/^\//, '') || 'famt_login';
+  return _client.db(dbName);
 }
 
 /** User document shape in famt_login.famt_login */
