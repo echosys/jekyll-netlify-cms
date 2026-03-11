@@ -298,6 +298,7 @@ export default function App() {
 
   // ── Sync engine ───────────────────────────────────────────────────────────
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastReadAtRef   = useRef<number>(0);
 
   const connPayload = useCallback(() => {
     const c = syncStore.conn;
