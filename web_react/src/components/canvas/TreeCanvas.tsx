@@ -14,9 +14,9 @@ import {
   type Connection,
   type Node,
   type Edge,
+  type EdgeChange,
   ReactFlowProvider,
   useReactFlow,
-  MarkerType,
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -33,11 +33,12 @@ import {
 import { type NodeCardData } from './NodeCard';
 import NodeCard from './NodeCard';
 import RelationshipEdge from './RelationshipEdge';
+import FamilyGroupEdge, { type FamilyGroupEdgeData } from './FamilyGroupEdge';
 import { useAutoLayout } from '../../hooks/useAutoLayout';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
 const nodeTypes = { personNode: NodeCard };
-const edgeTypes = { relationship: RelationshipEdge };
+const edgeTypes = { relationship: RelationshipEdge, familyGroup: FamilyGroupEdge };
 
 interface CanvasProps {
   onOpenPerson: (node: TreeNode) => void;
@@ -89,7 +90,69 @@ function buildFlowEdges(
   onDeleteEdge: (edgeId: string) => void,
 ): Edge[] {
   const nodeMap = new Map(treeNodes.map((n) => [n.id, n]));
-  return treeEdges.map((e) => {
+
+  // ── Separate parent edges from other edges ────────────────────────────────
+  const parentEdges = treeEdges.filter((e) => e.relationship === 'parent');
+  const otherEdges  = treeEdges.filter((e) => e.relationship !== 'parent');
+
+  // ── Build family groups ───────────────────────────────────────────────────
+  // A "family group" is a unique set of parents that share at least one child.
+  // Key = sorted parent IDs joined by '|'.
+  // We group by: for each child, collect all its parents.
+  const childToParents = new Map<string, Set<string>>();
+  for (const e of parentEdges) {
+    if (!childToParents.has(e.target)) childToParents.set(e.target, new Set());
+    childToParents.get(e.target)!.add(e.source);
+  }
+
+  // Group children by their parent-set key
+  const groupMap = new Map<string, { parentIds: string[]; childIds: string[]; edgeIds: string[] }>();
+  for (const [childId, parents] of childToParents) {
+    const key = [...parents].sort().join('|');
+    if (!groupMap.has(key)) {
+      groupMap.set(key, { parentIds: [...parents].sort(), childIds: [], edgeIds: [] });
+    }
+    const g = groupMap.get(key)!;
+    g.childIds.push(childId);
+    // Collect original edge IDs for this child
+    for (const parentId of parents) {
+      const orig = parentEdges.find((e) => e.source === parentId && e.target === childId);
+      if (orig) g.edgeIds.push(orig.id);
+    }
+  }
+
+  // ── Build family-group Flow edges ─────────────────────────────────────────
+  const familyGroupFlowEdges: Edge[] = [];
+  for (const [key, group] of groupMap) {
+    const color = edgeColor('parent', 'Father'); // neutral blue-ish default
+    // Use the parent-set key as the ID so it's stable across re-renders
+    const groupId = `fg:${key}`;
+    const fgData: FamilyGroupEdgeData = {
+      parentIds: group.parentIds,
+      childIds: group.childIds,
+      edgeIds: group.edgeIds,
+      color,
+      onDeleteEdge,
+    };
+    familyGroupFlowEdges.push({
+      id: groupId,
+      // source/target must be valid node IDs for React Flow; use first parent → first child
+      source: group.parentIds[0],
+      target: group.childIds[0],
+      type: 'familyGroup',
+      // No handles — FamilyGroupEdge computes its own geometry via useStore
+      sourceHandle: 'bottom',
+      targetHandle: 'top',
+      // Prevent React Flow from selecting/deleting these synthetic edges
+      deletable: false,
+      selectable: false,
+      focusable: false,
+      data: fgData as unknown as Record<string, unknown>,
+    });
+  }
+
+  // ── Build non-parent Flow edges (spouse, sibling, etc.) ───────────────────
+  const otherFlowEdges: Edge[] = otherEdges.map((e) => {
     const isSideEdge = e.relationship === 'spouse' || e.relationship === 'ex_spouse' || e.relationship === 'sibling';
     let sourceHandle: string | undefined;
     let targetHandle: string | undefined;
@@ -113,14 +176,6 @@ function buildFlowEdges(
       type: 'relationship',
       sourceHandle,
       targetHandle,
-      ...(isSideEdge ? {} : {
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: edgeColor(e.relationship, e.label),
-          width: 14,
-          height: 14,
-        },
-      }),
       data: {
         relationship: e.relationship,
         label: e.label,
@@ -130,6 +185,8 @@ function buildFlowEdges(
       },
     };
   });
+
+  return [...familyGroupFlowEdges, ...otherFlowEdges];
 }
 
 // ─── Add-Relationship picker modal ───────────────────────────────────────────
@@ -280,6 +337,14 @@ function CanvasInner({ onOpenPerson, onSave }: CanvasProps) {
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // Protect synthetic family-group edges from being removed by React Flow internally.
+  // Edge lifecycle is fully driven by store → setEdges; we only pass through
+  // non-destructive changes (select, reset) to React Flow.
+  const onEdgesChangeSafe = useCallback((changes: EdgeChange[]) => {
+    const safe = changes.filter((c) => c.type !== 'remove');
+    if (safe.length > 0) onEdgesChange(safe);
+  }, [onEdgesChange]);
 
   // Add-relationship picker state (replaces drag-to-connect)
   const [relPicker, setRelPicker] = useState<{
@@ -459,7 +524,7 @@ function CanvasInner({ onOpenPerson, onSave }: CanvasProps) {
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={onEdgesChangeSafe}
         onConnect={onConnect}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
