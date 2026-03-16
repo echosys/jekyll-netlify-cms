@@ -1,0 +1,24 @@
+Don't change this file, it is for my own logs only
+
+
+//
+/Users/lge11/pyenvs/py311/bin/pip install -r requirements.txt
+
+
+
+
+//features
+	I want to write a local photo management app for win and  osx, basically a simplified version of Picasa
+	It will use folder as backend photo storage structure
+	In the UI, user can add a workspace that is a folder, in the left bar/panel that is 15% of width,  all the workspaces added will be there, if checked then that workspace will be active where all photos under it will show on the right panel
+
+	on the right panel in top have tabs, that can switch the views user can select from, first folder view where it shows photos thumbnails in each folder, if nested it will be bar level1 folder, then photos directly under level 1 folder, then bar2 level1-level2, then photos directly under level 2 folder, then bar3 for folder3 etc..
+
+	Second is timeline view, where it will display by rank all the photos in that workspace, the rank can be by creation time, modify time or size
+	Third is map view, display on a map using the gps on photos if available, show a heat map where the photos are taken, when clicked will also show the photos taken there
+
+	When loading folders with many subfolders or photos, I don't want the UI to freeze, just display what photos are read and show a progress while read the rest of files in the background
+	It should support most photo and videos
+	Recommended Approach: Python + Qt (PyQt6 or PySide6)
+
+	After the change, update all markdown files to be called [date][type of change]_[few word summary].md   like 20260305feature_login, type can be feature, debug, or plan.

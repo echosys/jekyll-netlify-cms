@@ -1,0 +1,27 @@
+
+
+
+//web react
+# Terminal 1 — filesystem server (reads/writes FamilyTrees_react/)
+npm run dev:fs
+
+# Terminal 2 — Vite dev server
+npm run dev
+
+# Or both at once:
+npm run dev:all
+
+
+
+
+
+
+
+
+
+
+//python
+# create venv activate
+# install req
+# run
+

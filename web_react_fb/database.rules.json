@@ -1,0 +1,44 @@
+{
+    "rules": {
+        //2 apps using same real time db, this is rules for contact book do not delete or modify as family tree app
+        "users_cb": {
+            "$uid": {
+                ".read": "auth != null && auth.uid == $uid",
+                ".write": "auth != null && auth.uid == $uid",
+                "contacts": {
+                    ".indexOn": [
+                        "group",
+                        "name",
+                        "updatedAt"
+                    ]
+                }
+            }
+        },
+        //2 apps using same real time db, this is rules for family tree do not delete or modify as contact book app 
+        "users_famt": {
+            "$uid": {
+                // Users can read and write their own profile
+                ".read": "auth != null && $uid == auth.uid",
+                ".write": "auth != null && ($uid == auth.uid || root.child('users_famt').child(auth.uid).child('role').val() == 'dev')"
+            },
+            // Devs can list users
+            ".read": "auth != null && root.child('users_famt').child(auth.uid).child('role').val() == 'dev'"
+        },
+        "trees": {
+            // Authenticated users can list trees
+            ".read": "auth != null",
+            "$folderName": {
+                // Authenticated users can read tree data
+                ".read": "auth != null",
+                // Authenticated famt users can write to the tree
+                ".write": "auth != null && (data.child('ownerUid').val() == auth.uid || !data.exists() || root.child('users_famt').child(auth.uid).exists())",
+                "images": {
+                    "$resourceId": {
+                        ".read": "auth != null",
+                        ".write": "auth != null && (root.child('trees').child($folderName).child('ownerUid').val() == auth.uid || !data.exists() || root.child('users_famt').child(auth.uid).exists())"
+                    }
+                }
+            }
+        }
+    }
+}

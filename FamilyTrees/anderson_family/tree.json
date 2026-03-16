@@ -1,0 +1,687 @@
+{
+  "tree_id": "c18701a2-6715-4182-8d5a-317cd45a4b5f",
+  "tree_name": "Anderson Family",
+  "version": "1.0",
+  "created_at": "2026-03-07T00:00:00Z",
+  "updated_at": "2026-03-08T18:28:58Z",
+  "nodes": [
+    {
+      "id": "eb25d503-8441-4924-80e0-64b4ce121a48",
+      "name": "George Anderson",
+      "birth_date": "1935-04-12",
+      "death_date": "2010-11-03",
+      "gender": "male",
+      "bio": "George was a carpenter and community leader who built the family home in Vermont. He served in the Korean War and was known for his woodworking and love of fishing. He was an elder at the local church for over 30 years.",
+      "profile_image_ref": "resources/1935-george_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 400.0,
+        "y": 60.0
+      },
+      "links": []
+    },
+    {
+      "id": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+      "name": "Eleanor Anderson",
+      "birth_date": "1940-08-22",
+      "death_date": null,
+      "gender": "female",
+      "bio": "Eleanor is a retired schoolteacher who taught elementary school for 35 years in Burlington. She is an avid gardener and hosts the annual family reunion every summer. She has been learning watercolour painting since retirement.",
+      "profile_image_ref": "resources/1940-eleanor_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 640.0,
+        "y": 60.0
+      },
+      "links": []
+    },
+    {
+      "id": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+      "name": "Thomas Anderson",
+      "birth_date": "1962-02-14",
+      "death_date": null,
+      "gender": "male",
+      "bio": "Thomas is a civil engineer based in Boston, specialising in bridge design. He and his wife Margaret have two children, Robert and Clara. He coaches youth soccer on weekends and is a passionate fly-fisherman.",
+      "profile_image_ref": "resources/1962-thomas_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 160.0,
+        "y": 280.0
+      },
+      "links": []
+    },
+    {
+      "id": "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+      "name": "Margaret Anderson",
+      "birth_date": "1964-07-30",
+      "death_date": null,
+      "gender": "female",
+      "bio": "Margaret is a pediatric nurse at Boston Children's Hospital. She grew up in Portland, Maine and met Thomas at UVM. She has climbed all 48 New Hampshire 4000-footers and is training for her first marathon.",
+      "profile_image_ref": "resources/1964-margaret_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 400.0,
+        "y": 280.0
+      },
+      "links": []
+    },
+    {
+      "id": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+      "name": "Alice Anderson",
+      "birth_date": "1965-12-05",
+      "death_date": null,
+      "gender": "female",
+      "bio": "Alice is a graphic designer and the youngest child of George and Eleanor. She lives in Portland, Oregon, and specialises in book-cover and editorial design. Her son Henry inherited her eye for visual storytelling.",
+      "profile_image_ref": "resources/1965-alice_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 700.0,
+        "y": 280.0
+      },
+      "links": []
+    },
+    {
+      "id": "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+      "name": "Robert Anderson",
+      "birth_date": "1988-09-17",
+      "death_date": null,
+      "gender": "male",
+      "bio": "Robert is a senior software engineer at a Bay Area startup. He is the eldest child of Thomas and Margaret. Outside work he brews his own beer and volunteers at a local food bank.",
+      "profile_image_ref": "resources/1988-robert_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 80.0,
+        "y": 500.0
+      },
+      "links": []
+    },
+    {
+      "id": "980482ce-6089-4401-833e-36c66d7626eb",
+      "name": "Clara Anderson",
+      "birth_date": "1990-03-25",
+      "death_date": null,
+      "gender": "female",
+      "bio": "Clara is a medical resident at Johns Hopkins Hospital, specialising in geriatrics. She plays violin in a local chamber orchestra and volunteers at a free clinic on weekends.",
+      "profile_image_ref": "resources/1990-clara_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 320.0,
+        "y": 500.0
+      },
+      "links": []
+    },
+    {
+      "id": "d0bd6fd9-7083-4e52-8696-7931973ffba8",
+      "name": "Henry Anderson",
+      "birth_date": "1992-06-11",
+      "death_date": null,
+      "gender": "male",
+      "bio": "Henry is Alice's son and a freelance travel photographer based in New York. His work has appeared in National Geographic Traveller, Conde Nast, and several independent zines. He is currently working on a book about vanishing rural landscapes.",
+      "profile_image_ref": "resources/1992-henry_anderson.jpg",
+      "is_standalone": false,
+      "position": {
+        "x": 720.0,
+        "y": 500.0
+      },
+      "links": []
+    },
+    {
+      "id": "067b2499-3a8a-4192-b1c4-3128383e67b0",
+      "name": "test",
+      "birth_date": null,
+      "death_date": null,
+      "gender": "unknown",
+      "bio": "asvsagsdag   2",
+      "profile_image_ref": "resources/1940-eleanor_anderson.jpg",
+      "is_standalone": true,
+      "position": {
+        "x": 126.3625730994152,
+        "y": 76.16374269005848
+      },
+      "links": [
+        {
+          "label": "test",
+          "url": "www.test.com"
+        },
+        {
+          "label": "test2",
+          "url": "test2"
+        },
+        {
+          "label": "fs",
+          "url": ""
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "9e6edd5b-a535-4b7e-b116-2f4bb7404287",
+      "source": "eb25d503-8441-4924-80e0-64b4ce121a48",
+      "target": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+      "relationship": "spouse",
+      "label": "Spouse"
+    },
+    {
+      "id": "6d9c3cf7-5343-476a-9485-f1f6fb21bdb5",
+      "source": "eb25d503-8441-4924-80e0-64b4ce121a48",
+      "target": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+      "relationship": "parent",
+      "label": "Father of"
+    },
+    {
+      "id": "dc071e65-7150-47d2-9a1b-2f2c5f4974c9",
+      "source": "eb25d503-8441-4924-80e0-64b4ce121a48",
+      "target": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+      "relationship": "parent",
+      "label": "Father of"
+    },
+    {
+      "id": "519bb4e0-239b-4fd4-923e-e3b3bd2e8734",
+      "source": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+      "target": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+      "relationship": "parent",
+      "label": "Mother of"
+    },
+    {
+      "id": "312eba5a-901f-4d5d-99f9-b8147e2f95af",
+      "source": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+      "target": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+      "relationship": "parent",
+      "label": "Mother of"
+    },
+    {
+      "id": "f599b725-2b5d-4a49-bfe8-6cdedaa5c5b7",
+      "source": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+      "target": "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+      "relationship": "spouse",
+      "label": "Spouse"
+    },
+    {
+      "id": "7104b504-60ba-4bbb-9320-6d97105cc9ea",
+      "source": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+      "target": "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+      "relationship": "parent",
+      "label": "Father of"
+    },
+    {
+      "id": "858a672d-add7-4973-966a-8e0a7a8261a9",
+      "source": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+      "target": "980482ce-6089-4401-833e-36c66d7626eb",
+      "relationship": "parent",
+      "label": "Father of"
+    },
+    {
+      "id": "f55abaaf-afe6-4b9a-beee-7f94802e3a6e",
+      "source": "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+      "target": "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+      "relationship": "parent",
+      "label": "Mother of"
+    },
+    {
+      "id": "0065815d-6caf-4d6e-a0ae-cbbec18d4556",
+      "source": "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+      "target": "980482ce-6089-4401-833e-36c66d7626eb",
+      "relationship": "parent",
+      "label": "Mother of"
+    },
+    {
+      "id": "3eaa0f3d-f589-48fd-894a-572d2f6cfade",
+      "source": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+      "target": "d0bd6fd9-7083-4e52-8696-7931973ffba8",
+      "relationship": "parent",
+      "label": "Mother of"
+    },
+    {
+      "id": "c9080f72-449a-4859-be9a-a5a837332d87",
+      "source": "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+      "target": "980482ce-6089-4401-833e-36c66d7626eb",
+      "relationship": "sibling",
+      "label": "Sibling"
+    },
+    {
+      "id": "94e448be-ae41-49e0-823b-a69ed40405ed",
+      "source": "eb25d503-8441-4924-80e0-64b4ce121a48",
+      "target": "067b2499-3a8a-4192-b1c4-3128383e67b0",
+      "relationship": "parent",
+      "label": "Father of"
+    }
+  ],
+  "resources": [
+    {
+      "id": "1803e52d-8528-4978-80d4-8f2a5d286df4",
+      "filename": "1935-george_anderson.jpg",
+      "original_filename": "george_portrait.jpg",
+      "tags": {
+        "persons": [
+          "eb25d503-8441-4924-80e0-64b4ce121a48"
+        ],
+        "date": "1935-04-12",
+        "location": "Burlington, Vermont",
+        "gps": {
+          "lat": 44.4759,
+          "lng": -73.2121
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "eb25d503-8441-4924-80e0-64b4ce121a48",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "7a85ee6e-d9ad-482c-b52e-15076ae66310",
+      "filename": "1940-eleanor_anderson.jpg",
+      "original_filename": "eleanor_portrait.jpg",
+      "tags": {
+        "persons": [
+          "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+          "067b2499-3a8a-4192-b1c4-3128383e67b0"
+        ],
+        "date": "1940-08-22",
+        "location": "Burlington, Vermont",
+        "gps": {
+          "lat": 44.4759,
+          "lng": -73.2121
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        },
+        {
+          "node_id": "067b2499-3a8a-4192-b1c4-3128383e67b0",
+          "rect": {
+            "x": 57.25,
+            "y": 77.75,
+            "w": 35.5,
+            "h": 19.5
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "3c513c82-18d7-4f35-8760-1a6de13e5ae2",
+      "filename": "1962-thomas_anderson.jpg",
+      "original_filename": "thomas_portrait.jpg",
+      "tags": {
+        "persons": [
+          "a3d25801-9b65-4002-9d90-4cb1eed8caf7"
+        ],
+        "date": "1962-02-14",
+        "location": "Boston, Massachusetts",
+        "gps": {
+          "lat": 42.3601,
+          "lng": -71.0589
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "88e5587b-3465-4e96-b085-17c25742b3f7",
+      "filename": "1964-margaret_anderson.jpg",
+      "original_filename": "margaret_portrait.jpg",
+      "tags": {
+        "persons": [
+          "b4a99f6f-0f7f-493d-be0a-fed4123eab8d"
+        ],
+        "date": "1964-07-30",
+        "location": "Portland, Maine",
+        "gps": {
+          "lat": 43.6591,
+          "lng": -70.2568
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "c5bd3d7f-a4da-4b97-bd8c-8246567f64b8",
+      "filename": "1965-alice_anderson.jpg",
+      "original_filename": "alice_portrait.jpg",
+      "tags": {
+        "persons": [
+          "d6a555d9-75c5-4b00-9000-101cf8b42c9d"
+        ],
+        "date": "1965-12-05",
+        "location": "Portland, Oregon",
+        "gps": {
+          "lat": 45.5051,
+          "lng": -122.675
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "76cdf9fb-200e-4bd6-b4b6-5d2354be9fba",
+      "filename": "1988-robert_anderson.jpg",
+      "original_filename": "robert_portrait.jpg",
+      "tags": {
+        "persons": [
+          "87a31dc6-26f5-4fe2-8311-3db6b330f8b1"
+        ],
+        "date": "1988-09-17",
+        "location": "San Francisco, California",
+        "gps": {
+          "lat": 37.7749,
+          "lng": -122.4194
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "56ce5e18-7ee6-48a8-85d0-d27c8a75ca44",
+      "filename": "1990-clara_anderson.jpg",
+      "original_filename": "clara_portrait.jpg",
+      "tags": {
+        "persons": [
+          "980482ce-6089-4401-833e-36c66d7626eb"
+        ],
+        "date": "1990-03-25",
+        "location": "Baltimore, Maryland",
+        "gps": {
+          "lat": 39.2904,
+          "lng": -76.6122
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "980482ce-6089-4401-833e-36c66d7626eb",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "c1131dbb-f258-438d-8ad8-550973d70648",
+      "filename": "1992-henry_anderson.jpg",
+      "original_filename": "henry_portrait.jpg",
+      "tags": {
+        "persons": [
+          "d0bd6fd9-7083-4e52-8696-7931973ffba8"
+        ],
+        "date": "1992-06-11",
+        "location": "New York, New York",
+        "gps": {
+          "lat": 40.7128,
+          "lng": -74.006
+        },
+        "custom_tags": [
+          "portrait"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "d0bd6fd9-7083-4e52-8696-7931973ffba8",
+          "rect": {
+            "x": 20.0,
+            "y": 12.0,
+            "w": 60.0,
+            "h": 56.0
+          },
+          "use_as_profile": true
+        }
+      ]
+    },
+    {
+      "id": "3c2a2c48-2db0-43c8-b863-91a87a9fffd0",
+      "filename": "1985-christmas_family_reunion.jpg",
+      "original_filename": "xmas_1985.jpg",
+      "tags": {
+        "persons": [
+          "eb25d503-8441-4924-80e0-64b4ce121a48",
+          "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+          "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+          "d6a555d9-75c5-4b00-9000-101cf8b42c9d"
+        ],
+        "date": "1985-12-25",
+        "location": "Burlington, Vermont",
+        "gps": {
+          "lat": 44.4759,
+          "lng": -73.2121
+        },
+        "custom_tags": [
+          "christmas",
+          "reunion",
+          "holiday"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "eb25d503-8441-4924-80e0-64b4ce121a48",
+          "rect": {
+            "x": 5.0,
+            "y": 30.0,
+            "w": 13.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+          "rect": {
+            "x": 22.0,
+            "y": 30.0,
+            "w": 13.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+          "rect": {
+            "x": 39.0,
+            "y": 30.0,
+            "w": 13.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+          "rect": {
+            "x": 68.0,
+            "y": 30.0,
+            "w": 13.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        }
+      ]
+    },
+    {
+      "id": "9f4e1bc3-98bc-45af-80f5-8dede5b016ab",
+      "filename": "2005-anderson_family_reunion.jpg",
+      "original_filename": "reunion_2005.jpg",
+      "tags": {
+        "persons": [
+          "eb25d503-8441-4924-80e0-64b4ce121a48",
+          "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+          "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+          "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+          "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+          "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+          "980482ce-6089-4401-833e-36c66d7626eb",
+          "d0bd6fd9-7083-4e52-8696-7931973ffba8"
+        ],
+        "date": "2005-07-04",
+        "location": "Burlington, Vermont",
+        "gps": {
+          "lat": 44.4759,
+          "lng": -73.2121
+        },
+        "custom_tags": [
+          "reunion",
+          "whole family",
+          "summer"
+        ]
+      },
+      "regions": [
+        {
+          "node_id": "eb25d503-8441-4924-80e0-64b4ce121a48",
+          "rect": {
+            "x": 5.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "5ed40e84-0a13-46c1-b9f9-c520d146638e",
+          "rect": {
+            "x": 17.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "a3d25801-9b65-4002-9d90-4cb1eed8caf7",
+          "rect": {
+            "x": 29.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "b4a99f6f-0f7f-493d-be0a-fed4123eab8d",
+          "rect": {
+            "x": 41.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "d6a555d9-75c5-4b00-9000-101cf8b42c9d",
+          "rect": {
+            "x": 53.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "87a31dc6-26f5-4fe2-8311-3db6b330f8b1",
+          "rect": {
+            "x": 65.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "980482ce-6089-4401-833e-36c66d7626eb",
+          "rect": {
+            "x": 77.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        },
+        {
+          "node_id": "d0bd6fd9-7083-4e52-8696-7931973ffba8",
+          "rect": {
+            "x": 89.0,
+            "y": 30.0,
+            "w": 10.0,
+            "h": 38.0
+          },
+          "use_as_profile": false
+        }
+      ]
+    }
+  ]
+}

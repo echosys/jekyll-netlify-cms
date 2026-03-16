@@ -1,0 +1,18 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/pg-test",   "destination": "/api/pg" },
+    { "source": "/api/pg-list",   "destination": "/api/pg" },
+    { "source": "/api/pg-export", "destination": "/api/pg" },
+    { "source": "/api/pg-import", "destination": "/api/pg" },
+    { "source": "/api/pg-delete", "destination": "/api/pg" },
+    { "source": "/api/mongo-login",  "destination": "/api/mongo" },
+    { "source": "/api/mongo-lock",   "destination": "/api/mongo" },
+    { "source": "/api/mongo-admin",  "destination": "/api/mongo" },
+    { "source": "/api/health",       "destination": "/api/mongo" },
+    { "source": "/api/user-conn",    "destination": "/api/mongo" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
