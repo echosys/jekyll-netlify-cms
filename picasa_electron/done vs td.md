@@ -2,7 +2,7 @@
 
 This repository contains the code for the Electron port of the PyQt6 Photo Manager, with an added backup system that writes uncompressed zip container parts and a root-level SQLite cache per backup target.
 
-## Implementation status — Done vs To Do (updated 2026-03-18)
+## Implementation status — Done vs To Do (updated 2026-03-19)
 
 This section maps the original request and design to what has been implemented in this repository so far and what still remains to be done. Use this as the single source of truth while I continue implementing features.
 
@@ -13,6 +13,14 @@ This section maps the original request and design to what has been implemented i
 ---
 
 ### Features implemented (Done)
+- **PyQt6 Feature Port (Mirroring UI)** (Done 2026-03-19)
+  - **Folder View**: Collapsible sections for workspaces and subfolders. (Done)
+  - **Timeline View**: Sorting by Creation, Modified, Size, and Geolocation. (Done)
+  - **Map View**: Interactive Leaflet integration with markers and popups. (Done)
+  - **Photo Preview**: Modal with Zoom/Pan, Navigation, and Location Editor. (Done)
+  - **Scanner Improvements**: Full EXIF extraction (GPS, Date, Camera). (Done)
+  - **Aesthetics**: Premium dark-mode design with glassmorphism. (Done)
+
 - Project scaffold and build basics
   - package.json created with scripts: `dev`, `build:renderer`, `build`, `start`, `test`. (Done)
   - TypeScript config (`tsconfig.json`) set to ES2020. (Done)

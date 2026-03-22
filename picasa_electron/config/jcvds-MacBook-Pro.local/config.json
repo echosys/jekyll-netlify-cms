@@ -1,0 +1,17 @@
+{
+  "workspaces": [
+    {
+      "id": "1773985603757",
+      "name": "z24T2",
+      "path": "/Users/jcvd/Downloads/z24T2",
+      "active": true
+    },
+    {
+      "id": "1773985614226",
+      "name": "z25T2",
+      "path": "/Users/jcvd/Downloads/z25T2",
+      "active": false
+    }
+  ],
+  "backupTargets": []
+}

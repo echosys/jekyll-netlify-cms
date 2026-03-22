@@ -3,7 +3,6 @@ import * as path from 'path';
 import { initDb } from './db';
 import { ArchiveWriter } from './archive_writer';
 import { Worker } from 'worker_threads';
-import { initViewerDb, insertThumbnail } from './viewer_db';
 import * as crypto from 'crypto';
 import * as os from 'os';
 import * as util from 'util';
@@ -265,10 +264,10 @@ export class BackupManager {
       worker.on('message', (m: any) => {
         if (m.type === 'thumb') {
           try {
-            const dbThumb = initViewerDb(dbPath);
+            const dbThumb = initDb(dbPath);
             const buffer = require('fs').readFileSync(m.thumb);
-            const key = Buffer.from(m.file).toString('hex');
-            insertThumbnail(dbThumb, key, buffer, 320, 320);
+            const insert = dbThumb.prepare('INSERT OR REPLACE INTO thumbnails (key, thumb, width, height, updated_at_utc) VALUES (?, ?, ?, ?, ?)');
+            insert.run(m.file, buffer, 320, 320, new Date().toISOString());
             dbThumb.close();
           } catch (e) {
             console.error('failed to insert thumb into backup db', e);

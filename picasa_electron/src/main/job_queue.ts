@@ -21,12 +21,22 @@ export class JobQueue {
 
   enqueueWorker(workerPath: string, workerData: any, onMessage: (m: any) => void) {
     const id = this.idCounter++;
-    const worker = new Worker(workerPath, { workerData });
-    worker.on('message', onMessage);
-    worker.on('error', (err) => console.error('Worker error', err));
-    worker.on('exit', (code) => {
-      if (code !== 0) console.error('Worker stopped with exit code', code);
+    this.queue.push({ 
+       id, 
+       fn: async (progress, isCancelled) => {
+          return new Promise((resolve, reject) => {
+            if (isCancelled()) return resolve(null);
+            const worker = new Worker(workerPath, { workerData });
+            worker.on('message', onMessage);
+            worker.on('error', (err) => { console.error('Worker error', err); reject(err); });
+            worker.on('exit', (code) => {
+              if (code !== 0) console.error('Worker stopped with exit code', code);
+              resolve(code);
+            });
+          });
+       }
     });
+    this.runNext();
     return id;
   }
 

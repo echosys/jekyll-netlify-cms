@@ -1,17 +1,56 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
+  // Config & Workspaces
+  getConfig: () => ipcRenderer.invoke('get-config'),
+  saveConfig: (config: any) => ipcRenderer.invoke('save-config', config),
+
+  // Geocoding & EXIF
+  reverseGeocode: (lat: number, lon: number) => ipcRenderer.invoke('reverse-geocode', { lat, lon }),
+  writeExifLocation: (filePath: string, lat: number, lon: number, location: any) => 
+    ipcRenderer.invoke('write-exif-location', { filePath, lat, lon, location }),
+
+  // Scanning
+  scanFolder: (root: string) => ipcRenderer.invoke('scan-folder', root),
+  getScanCache: (root: string) => ipcRenderer.invoke('get-scan-cache', root),
+  onScanProgress: (cb: (m: any) => void) => {
+    const l = (_e: any, m: any) => cb(m);
+    ipcRenderer.on('scan-progress', l);
+    return () => ipcRenderer.removeListener('scan-progress', l);
+  },
+
+  // Thumbnails
+  generateThumbnails: (files: any[], outDir?: string) => ipcRenderer.invoke('generate-thumbnails', { files, outDir }),
+  listThumbnails: (cacheDbPath?: string, limit?: number) => ipcRenderer.invoke('list-thumbnails', cacheDbPath, limit || 100),
+  onThumbnailProgress: (cb: (p: any) => void) => {
+    const l = (_e: any, p: any) => cb(p);
+    ipcRenderer.on('thumbnail-progress', l);
+    return () => ipcRenderer.removeListener('thumbnail-progress', l);
+  },
+
+  // Backup
   listBackupTargets: () => ipcRenderer.invoke('list-backup-targets'),
   addBackupTarget: (p: string) => ipcRenderer.invoke('add-backup-target', p),
   removeBackupTarget: (p: string) => ipcRenderer.invoke('remove-backup-target', p),
-  computeDiff: (spec: any) => ipcRenderer.invoke('compute-diff', spec),
   startBackup: (jobSpec: any) => ipcRenderer.invoke('start-backup', jobSpec),
-  scanFolder: (root: string) => ipcRenderer.invoke('scan-folder', root),
-  generateThumbnails: (files: any[], outDir: string, cacheDbPath?: string) => ipcRenderer.invoke('generate-thumbnails', { files, outDir, cacheDbPath }),
-  listThumbnails: (cacheDbPath: string, limit?: number) => ipcRenderer.invoke('list-thumbnails', cacheDbPath, limit || 100),
-  openFolderDialog: (opts?: any) => ipcRenderer.invoke('open-folder-dialog', opts),
   cancelBackup: (jobId: number) => ipcRenderer.invoke('cancel-backup', jobId),
-  onBackupProgress: (cb: (p: any) => void) => ipcRenderer.on('backup-progress', (_e, p) => cb(p)),
-  onScanProgress: (cb: (p: any) => void) => ipcRenderer.on('scan-progress', (_e, p) => cb(p)),
-  onThumbnailProgress: (cb: (p: any) => void) => ipcRenderer.on('thumbnail-progress', (_e, p) => cb(p))
+  computeDiff: (spec: any) => ipcRenderer.invoke('compute-diff', spec),
+  onBackupProgress: (cb: (p: any) => void) => {
+    const l = (_e: any, p: any) => cb(p);
+    ipcRenderer.on('backup-progress', l);
+    return () => ipcRenderer.removeListener('backup-progress', l);
+  },
+
+  // Menus
+  onMenuAction: (cb: (action: string) => void) => {
+    const l = (_e: any, action: string) => cb(action);
+    ipcRenderer.on('menu-action', l);
+    return () => ipcRenderer.removeListener('menu-action', l);
+  },
+
+  // Dialogs
+  openFolderDialog: (opts?: any) => ipcRenderer.invoke('open-folder-dialog', opts),
+
+  // DevTools
+  openDevTools: () => ipcRenderer.send('open-devtools')
 });
