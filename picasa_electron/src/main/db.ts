@@ -10,7 +10,6 @@ try {
 }
 
 function createFallbackDb() {
-  // very small in-memory stub that supports the methods used by the app
   const tables: Record<string, any[]> = {};
   return {
     pragma: (_: string) => undefined,
@@ -92,6 +91,8 @@ export function initDb(dbPath: string) {
           id INTEGER PRIMARY KEY,
           name TEXT,
           timestamp_utc TEXT,
+          source_root_name TEXT,
+          source_root_path TEXT,
           settings_json TEXT,
           parts_json TEXT,
           created_by TEXT,
@@ -117,6 +118,11 @@ export function initDb(dbPath: string) {
         CREATE INDEX IF NOT EXISTS idx_thumbs_key ON thumbnails(key);
         CREATE INDEX IF NOT EXISTS idx_files_sha256 ON files(sha256);
       `);
+
+      // Migrations
+      try { db.exec('ALTER TABLE backups ADD COLUMN source_root_name TEXT'); } catch(e){}
+      try { db.exec('ALTER TABLE backups ADD COLUMN source_root_path TEXT'); } catch(e){}
+
       return db;
     } catch (e) {
       console.error('Failed to init better-sqlite3', e);
@@ -126,5 +132,3 @@ export function initDb(dbPath: string) {
   console.warn('better-sqlite3 not available — using in-memory DB fallback');
   return createFallbackDb();
 }
-
-

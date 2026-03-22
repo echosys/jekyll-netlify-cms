@@ -2,7 +2,7 @@
 
 This repository contains the code for the Electron port of the PyQt6 Photo Manager, with an added backup system that writes uncompressed zip container parts and a root-level SQLite cache per backup target.
 
-## Implementation status — Done vs To Do (updated 2026-03-19)
+## Implementation status — Done vs To Do (updated 2026-03-21)
 
 This section maps the original request and design to what has been implemented in this repository so far and what still remains to be done. Use this as the single source of truth while I continue implementing features.
 
@@ -20,6 +20,19 @@ This section maps the original request and design to what has been implemented i
   - **Photo Preview**: Modal with Zoom/Pan, Navigation, and Location Editor. (Done)
   - **Scanner Improvements**: Full EXIF extraction (GPS, Date, Camera). (Done)
   - **Aesthetics**: Premium dark-mode design with glassmorphism. (Done)
+  
+- **UI Enhancements** (Done 2026-03-21)
+  - Improved button styling with transitions and active states
+  - Better tab styling with larger size and shadows
+  - Enhanced photo cards with shadows and hover effects
+  - Refined sidebar spacing and visual hierarchy
+  - Better input styling with focus states
+
+- **Cache & File Scanning** (Done 2026-03-21)
+  - Skip `.app` bundles entirely (macOS, treat as opaque files)
+  - Only index actual media files (images & videos)
+  - Cache clear functionality in File menu
+  - Auto-rescan after cache clear
 
 - Project scaffold and build basics
   - package.json created with scripts: `dev`, `build:renderer`, `build`, `start`, `test`. (Done)
@@ -27,7 +40,7 @@ This section maps the original request and design to what has been implemented i
   - Vite config for renderer added (`vite.config.ts`). (Done)
 
 - Main process pieces
-  - `src/main/main.ts` — Electron main bootstrap with BrowserWindow creation and IPC handlers wired for: `list-backup-targets`, `add-backup-target`, `remove-backup-target`, `start-backup`, `compute-diff`, `scan-folder`, `generate-thumbnails`. (Done)
+  - `src/main/main.ts` — Electron main bootstrap with BrowserWindow creation and IPC handlers wired for: `list-backup-targets`, `add-backup-target`, `remove-backup-target`, `start-backup`, `compute-diff`, `scan-folder`, `generate-thumbnails`, `clear-cache`. (Done)
   - `src/main/db.ts` — SQLite initialization using `better-sqlite3` and the agreed schema (backups, files, thumbnails, display_cache, indexes). (Done)
   - `src/main/backup_manager.ts` — `BackupManager` implemented and extended to:
     - persist a simple list of backup targets under `config/backup_targets.json` and expose list/add/remove methods. (Done)
@@ -43,11 +56,11 @@ This section maps the original request and design to what has been implemented i
 - Background processing & job queue
   - `src/main/job_queue.ts` — `JobQueue` stub implemented with queueing and `enqueueWorker` support for `worker_threads`. (Done)
   - Worker scripts:
-    - `src/main/workers/scanner_worker.js` — recursive filesystem scanner worker that returns file list (Done)
+    - `src/main/workers/scanner_worker.js` — recursive filesystem scanner worker that returns file list and filters out `.app` bundles (Done)
     - `src/main/workers/thumbnail_worker.js` — thumbnail generator using `sharp` that emits per-file events (Done)
 
 - Preload & renderer integration
-  - `src/preload/preload.ts` — secure contextBridge exposing the minimal IPC API used by the renderer: list/add/remove targets, scan folder, generate thumbnails, compute diff, start backup, and progress event listeners (Done)
+  - `src/preload/preload.ts` — secure contextBridge exposing the minimal IPC API used by the renderer: list/add/remove targets, scan folder, generate thumbnails, compute diff, start backup, clear cache, and progress event listeners (Done)
   - Renderer skeleton (React + Vite):
     - `src/renderer/src/index.tsx` and `src/renderer/src/App.tsx` — UI with tabs (Folder/Timeline/Map/Backup), left workspace input + scan button, right backup-target add/remove UI, center Backup controls to start backup & request thumbnailing, and progress display (Done)
     - `src/renderer/index.html` updated for Vite dev module entry (Done)

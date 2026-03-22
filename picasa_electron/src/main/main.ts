@@ -59,6 +59,12 @@ function createMenu() {
              mainWindow?.webContents.send('menu-action', 'refresh-all');
           }
         },
+        {
+          label: 'Clear Cache',
+          click: () => {
+             mainWindow?.webContents.send('menu-action', 'clear-cache');
+          }
+        },
         { type: 'separator' },
         { label: 'Exit', accelerator: 'CmdOrCtrl+Q', role: 'quit' }
       ]
@@ -218,6 +224,15 @@ ipcMain.handle('write-exif-location', async (_, { filePath, lat, lon, location }
   }
 });
 
+ipcMain.handle('get-exif', async (_, filePath) => {
+  try {
+    return await exiftool.read(filePath);
+  } catch (e) {
+    return { error: String(e) };
+  }
+});
+
+
 
 function saveScanResults(root: string, files: any[], isAppend = true) {
   try {
@@ -320,11 +335,11 @@ ipcMain.handle('generate-thumbnails', async (_event, { files, outDir }) => {
     if (m.type === 'thumb') {
       try {
         const db = getViewerDb();
-        const buffer = fs.readFileSync(m.thumb);
+        const buffer = Buffer.from(m.thumbBase64, 'base64');
         const insert = db.prepare('INSERT OR REPLACE INTO thumbnails (key, thumb, width, height, updated_at_utc) VALUES (?, ?, ?, ?, ?)');
         insert.run(m.file, buffer, 320, 320, new Date().toISOString());
         // Remove temp thumb to keep cache dir clean
-        if (fs.existsSync(m.thumb)) fs.unlinkSync(m.thumb);
+        if (fs.existsSync(m.thumb)) try { fs.unlinkSync(m.thumb); } catch(e) {}
       } catch (e) {
         console.error('Failed to write thumb to db', e);
       }
@@ -333,7 +348,7 @@ ipcMain.handle('generate-thumbnails', async (_event, { files, outDir }) => {
   return { started: true };
 });
 
-ipcMain.handle('list-thumbnails', async (_event, dbPath: string, limit = 100) => {
+ipcMain.handle('list-thumbnails', async (_event, dbPath: string, limit = 10000) => {
   try {
     const db = getViewerDb();
     const rows = db.prepare('SELECT key, thumb, updated_at_utc FROM thumbnails ORDER BY updated_at_utc DESC LIMIT ?').all(limit);
@@ -358,11 +373,58 @@ ipcMain.handle('add-backup-target', async (_, p) => { backupManager.addTarget(p)
 ipcMain.handle('remove-backup-target', async (_, p) => { backupManager.removeTarget(p); return { ok: true }; });
 ipcMain.handle('start-backup', async (_, jobSpec) => {
   const jobId = jobQueue.enqueue(async (progress, isCancelled) => {
-    return backupManager.runBackup(jobSpec, (p: any) => {
-      if (mainWindow) mainWindow.webContents.send('backup-progress', p);
-    }, isCancelled);
+    try {
+      const res = await backupManager.runBackup(jobSpec, (p: any) => {
+        if (mainWindow) mainWindow.webContents.send('backup-progress', { ...p, jobId });
+      }, isCancelled);
+      if (mainWindow) mainWindow.webContents.send('backup-progress', { type: 'done', jobId, result: res });
+      return res;
+    } catch (e) {
+      if (mainWindow) mainWindow.webContents.send('backup-progress', { type: 'error', jobId, error: String(e) });
+      throw e;
+    }
   });
   return { jobId };
 });
+
 ipcMain.handle('cancel-backup', async (_, id) => { jobQueue.cancel(id); return { ok: true }; });
 ipcMain.handle('compute-diff', async (_, spec) => backupManager.computeDiff(spec));
+ipcMain.handle('list-backup-contents', async (_, backupPath) => backupManager.listContents(backupPath));
+ipcMain.handle('restore-file', async (_, { backupRoot, fileRecord }) => backupManager.restoreFile(backupRoot, fileRecord));
+ipcMain.handle('get-folder-size', async (_, folderPath) => {
+  let totalSize = 0;
+  const stack = [folderPath];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    try {
+      const stats = fs.statSync(current);
+      if (stats.isDirectory()) {
+        const files = fs.readdirSync(current);
+        for (const file of files) {
+          stack.push(path.join(current, file));
+        }
+      } else {
+        totalSize += stats.size;
+      }
+    } catch (e) {
+      // ignore errors for individual files
+    }
+  }
+  return totalSize;
+});
+
+
+
+// Cache Management
+ipcMain.handle('clear-cache', async () => {
+  try {
+    const db = getViewerDb();
+    db.prepare('DELETE FROM scan_results').run();
+    db.prepare('DELETE FROM thumbnails').run();
+    db.prepare('DELETE FROM scan_cache').run();
+    return { ok: true, message: 'Cache cleared successfully' };
+  } catch (e) {
+    console.error('Failed to clear cache:', e);
+    return { ok: false, error: String(e) };
+  }
+});

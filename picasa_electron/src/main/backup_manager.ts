@@ -7,12 +7,13 @@ import * as crypto from 'crypto';
 import * as os from 'os';
 import * as util from 'util';
 
-const CONFIG_DIR = path.join(process.cwd(), 'config');
-const TARGETS_FILE = path.join(CONFIG_DIR, 'backup_targets.json');
+const REPO_CONFIG_DIR = path.join(process.cwd(), 'config', os.hostname());
+const TARGETS_FILE = path.join(REPO_CONFIG_DIR, 'backup_targets.json');
 
 function ensureConfigDir() {
-  try { fs.mkdirSync(CONFIG_DIR, { recursive: true }); } catch (e) { }
+  try { fs.mkdirSync(REPO_CONFIG_DIR, { recursive: true }); } catch (e) { }
 }
+
 
 async function computeFileSha256(filePath: string) {
   return new Promise<string>((resolve, reject) => {
@@ -59,8 +60,10 @@ export class BackupManager {
   addTarget(p: string) {
     const list = this.listTargets();
     if (!list.includes(p)) list.push(p);
+    ensureConfigDir();
     fs.writeFileSync(TARGETS_FILE, JSON.stringify(list, null, 2));
   }
+
 
   removeTarget(p: string) {
     let list = this.listTargets();
@@ -157,7 +160,13 @@ export class BackupManager {
     }
   }
 
-  async runBackup(jobSpec: { files: any[], backupRoot: string }, progressCallback: (p: any) => void, isCancelled?: ()=>boolean) {
+  async runBackup(
+    jobSpec: { files: any[], backupRoot: string, maxPartSizeBytes?: number, sourceRootName?: string, sourceRootPath?: string }, 
+    progressCallback: (p: any) => void, 
+    isCancelled?: ()=>boolean
+  ) {
+
+
     const { files, backupRoot } = jobSpec;
     fs.mkdirSync(path.join(backupRoot, 'archives'), { recursive: true });
     fs.mkdirSync(path.join(backupRoot, 'thumbnails'), { recursive: true });
@@ -180,8 +189,19 @@ export class BackupManager {
     const dbPath = path.join(backupRoot, 'backup_metadata.sqlite');
     const db = initDb(dbPath);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
-    const baseName = `backup_${timestamp}`;
+    // Identify the source root name from the first file in the spec
+    const firstFile = files[0];
+    const sourceRootPath = jobSpec.sourceRootPath || (firstFile ? path.join(firstFile.absPath, '..', '..') : 'unknown'); 
+    const sourceRootName = jobSpec.sourceRootName || (firstFile ? firstFile.rel.split('/')[0] : 'root');
+
+    // Validation: Check if this destination already belongs to another source
+    const existing = db.prepare('SELECT source_root_path, source_root_name FROM backups WHERE source_root_path IS NOT NULL LIMIT 1').get();
+    if (existing && existing.source_root_path !== sourceRootPath) {
+      db.close();
+      throw new Error(`Target folder already contains a backup of "${existing.source_root_name}" (${existing.source_root_path}). Please use a different destination.`);
+    }
+
+    const stableName = 'picasa_backup';
 
     // compute volume fingerprints for drives present in files list
     const driveFingerprintMap: Record<string,string> = {};
@@ -193,11 +213,18 @@ export class BackupManager {
     }
 
     // Insert backup entry first (parts_json updated after we finalize)
-    const insertBackup = db.prepare('INSERT INTO backups (name, timestamp_utc, settings_json, parts_json, created_by) VALUES (?, ?, ?, ?, ?)');
-    const info = insertBackup.run(baseName, new Date().toISOString(), JSON.stringify({}), JSON.stringify([]), 'electron-backup');
+    const insertBackup = db.prepare('INSERT INTO backups (name, timestamp_utc, source_root_name, source_root_path, settings_json, parts_json, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const info = insertBackup.run(stableName, new Date().toISOString(), sourceRootName, sourceRootPath, JSON.stringify({}), JSON.stringify([]), 'electron-backup');
     const backupId = info.lastInsertRowid;
 
-    const writer = new ArchiveWriter({ backupRoot, baseName, maxPartSizeBytes: 10 * 1024 * 1024 * 1024 });
+    const writer = new ArchiveWriter({ 
+      backupRoot, 
+      baseName: stableName, 
+      maxPartSizeBytes: jobSpec.maxPartSizeBytes || 10 * 1024 * 1024 * 1024 
+    });
+
+
+
 
     // Prepare files insert (batched)
     const insertFile = db.prepare(`INSERT INTO files (backup_id, original_path, rel_path, size, mtime, sha256, archive_part, archive_offset, crc32, added_at_utc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -231,7 +258,13 @@ export class BackupManager {
       const nameInArchive = `${volId}/${f.rel}`.replace(/\\/g, '/');
       const part = await writer.addFile(f.absPath, nameInArchive);
       filesAdded++;
-      progressCallback({ filesAdded, currentPart: part });
+      progressCallback({ 
+        filesAdded, 
+        totalFiles: files.length,
+        currentPart: part,
+        percent: (filesAdded / files.length) * 100
+      });
+
 
       // immediate insert for safer resume (also batch up for performance)
       batch.push({ backup_id: backupId, original_path: f.absPath, rel_path: nameInArchive, size: f.size, mtime: f.mtime, sha256: sha, archive_part: part, archive_offset: null, crc32: null, added_at_utc: new Date().toISOString() });
@@ -298,4 +331,49 @@ export class BackupManager {
 
     return { filesAdded, parts: partsInfo };
   }
+  async listContents(backupPath: string) {
+    const dbPath = path.join(backupPath, 'backup_metadata.sqlite');
+    if (!fs.existsSync(dbPath)) {
+      // If it's a file, try checking the parent directory for the sqlite
+      const parentDir = path.dirname(backupPath);
+      const parentDbPath = path.join(parentDir, 'backup_metadata.sqlite');
+      const grandparentDbPath = path.join(path.dirname(parentDir), 'backup_metadata.sqlite');
+      
+      if (fs.existsSync(parentDbPath)) {
+        return this.queryContents(parentDbPath);
+      } else if (fs.existsSync(grandparentDbPath)) {
+        return this.queryContents(grandparentDbPath);
+      }
+      return { error: 'Backup metadata not found' };
+    }
+    return this.queryContents(dbPath);
+  }
+
+  async restoreFile(backupRoot: string, fileRecord: any, targetDir?: string) {
+    const partPath = path.join(backupRoot, 'archives', fileRecord.archive_part);
+    if (!fs.existsSync(partPath)) throw new Error(`Archive part missing: ${fileRecord.archive_part}`);
+    
+    const AdmZip = require('adm-zip'); // Use adm-zip for easy extraction
+    const zip = new AdmZip(partPath);
+    const entry = zip.getEntry(fileRecord.rel_path);
+    if (!entry) throw new Error(`File not found in archive: ${fileRecord.rel_path}`);
+    
+    const targetPath = targetDir ? path.join(targetDir, fileRecord.rel_path) : fileRecord.original_path;
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.writeFileSync(targetPath, zip.readFile(entry));
+    return targetPath;
+  }
+
+  private queryContents(dbPath: string) {
+    const db = initDb(dbPath);
+    try {
+      const last = db.prepare('SELECT id FROM backups ORDER BY id DESC LIMIT 1').get();
+      if (!last) return [];
+      const backupId = last.id;
+      return db.prepare('SELECT original_path, rel_path, size, mtime, archive_part FROM files WHERE backup_id = ?').all(backupId);
+    } finally {
+      try { db.close(); } catch (e) {}
+    }
+  }
 }
+

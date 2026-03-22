@@ -71,3 +71,17 @@ This document explains how the Electron app stores viewer cache and backup cache
 - Full per-file DB writes during backup (batched inserts), compute sha256 optionally, and record `archive_offset` for fast extraction. (Planned)
 - Pause/resume cancel for backups and improved worker concurrency controls. (Planned)
 - Native folder pickers and path normalization improvements for cross-platform volume naming. (Planned)
+
+## Recent Updates (March 21, 2026)
+
+### .app Bundle Handling
+- The scanner now properly skips macOS `.app`, `.framework`, and `.bundle` directories entirely
+- These are treated as single opaque files and not recursed into
+- Only actual image (`.jpg`, `.png`, etc.) and video files (`.mp4`, `.mov`, etc.) are added to the viewer cache
+- This prevents unnecessary indexing of application bundles and reduces cache bloat
+
+### Cache Management
+- Added "Clear Cache" option in File menu to completely reset the viewer cache
+- Clearing cache removes all entries from `scan_results`, `thumbnails`, and `scan_cache` tables
+- After clearing, the app automatically rescans all active workspaces
+- Useful for troubleshooting stale cache or significantly reducing app data folder size

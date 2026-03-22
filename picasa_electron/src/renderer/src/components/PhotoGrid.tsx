@@ -70,36 +70,37 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({ photos, onPhotoClick, thum
             <div className="aspect-square relative flex items-center justify-center bg-gray-900 overflow-hidden">
               {thumb ? (
                 <img 
-                  src={`data:image/jpeg;base64,${thumb}`} 
+                  src={thumb} 
                   alt={p.rel}
                   className="w-full h-full object-cover"
                 />
               ) : (
+
                 <div className="text-gray-700 animate-pulse">
                    {p.type === 'video' ? <Play size={32} /> : <div className="w-16 h-16 bg-gray-800 rounded"></div>}
                 </div>
               )}
               
               {p.type === 'video' && (
-                <div className="absolute top-2 left-2 bg-black/50 p-1 rounded backdrop-blur">
+                <div className="absolute top-2 left-2 bg-black-20 p-1 rounded backdrop-blur">
                   <Play size={12} className="text-white" />
                 </div>
               )}
               
               {p.lat && (
-                <div className="absolute top-2 right-2 bg-blue-500/50 p-1 rounded backdrop-blur">
+                <div className="absolute top-2 right-2 bg-accent-40 p-1 rounded backdrop-blur">
                   <MapPin size={10} className="text-white" />
                 </div>
               )}
             </div>
             
-            <div className="p-2 flex flex-col gap-1">
-              <div className="text-[11px] font-bold truncate" title={p.rel}>
+            <div className="p-1 flex flex-col gap-0-5">
+              <div className="text-11px font-bold truncate leading-tight text-white-80" title={p.rel}>
                 {p.rel.split('/').pop()}
               </div>
-              <div className="flex justify-between items-center text-[9px] text-white-40 font-black uppercase tracking-tightest">
-                <span>{formatSize(p.size)}</span>
-                <span>{formatDate(p.dateTaken || p.mtime)}</span>
+              <div className="flex justify-between items-center text-9px text-white-40 font-black uppercase tracking-tightest gap-0-5">
+                <span className="truncate">{formatSize(p.size)}</span>
+                <span className="truncate">{formatDate(p.dateTaken || p.mtime)}</span>
               </div>
             </div>
           </div>

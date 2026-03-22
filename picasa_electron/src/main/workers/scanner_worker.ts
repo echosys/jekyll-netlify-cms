@@ -37,33 +37,34 @@ async function scan() {
       if (IGNORE_DIRS.has(entry.name)) continue;
       if (entry.isSymbolicLink()) continue; // Avoid symlink cycles
 
-      const fullPath = path.join(dir, entry.name);
+      const fullPath = path.join(dir, entry.name).normalize('NFC');
       const isPackage = entry.name.toLowerCase().endsWith('.app') || 
                         entry.name.toLowerCase().endsWith('.framework') || 
                         entry.name.toLowerCase().endsWith('.bundle');
 
+      // Only recurse into directories that are NOT packages (treat packages as files)
       if (entry.isDirectory() && !isPackage) {
         await walk(fullPath);
       } else {
-        // Treat as file
+        // Add as file: regular files, packages, symlinks (skipped above but just in case)
         try {
-            const stats = fs.statSync(fullPath);
-            const ext = isPackage ? '' : path.extname(entry.name).toLowerCase();
-            const fileInfo: any = {
-              absPath: fullPath,
-              rel: path.relative(root, fullPath).split(path.sep).join('/'),
-              size: stats.size,
-              mtime: Math.floor(stats.mtimeMs),
-              driveName,
-              ext,
-              type: (isPackage) ? 'file' : (IMAGE_EXTENSIONS.has(ext) ? 'image' : (VIDEO_EXTENSIONS.has(ext) ? 'video' : 'file'))
-            };
-            discoveredFiles.push(fileInfo);
+          const stats = fs.statSync(fullPath);
+          const ext = isPackage ? '' : path.extname(entry.name).toLowerCase();
+          const fileInfo: any = {
+            absPath: fullPath,
+            rel: path.relative(root, fullPath).split(path.sep).join('/'),
+            size: stats.size,
+            mtime: Math.floor(stats.mtimeMs),
+            driveName,
+            ext,
+            type: (isPackage) ? 'file' : (IMAGE_EXTENSIONS.has(ext) ? 'image' : (VIDEO_EXTENSIONS.has(ext) ? 'video' : 'file'))
+          };
+          discoveredFiles.push(fileInfo);
 
-            // Instant updates for discovered files (every 1000 files)
-            if (discoveredFiles.length % 1000 === 0) {
-              parentPort?.postMessage({ type: 'discovered', files: discoveredFiles.slice(-1000) });
-            }
+          // Instant updates for discovered files (every 1000 files)
+          if (discoveredFiles.length % 1000 === 0) {
+            parentPort?.postMessage({ type: 'discovered', files: discoveredFiles.slice(-1000) });
+          }
         } catch (e) {}
       }
     }

@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   reverseGeocode: (lat: number, lon: number) => ipcRenderer.invoke('reverse-geocode', { lat, lon }),
   writeExifLocation: (filePath: string, lat: number, lon: number, location: any) => 
     ipcRenderer.invoke('write-exif-location', { filePath, lat, lon, location }),
+  getExif: (filePath: string) => ipcRenderer.invoke('get-exif', filePath),
 
   // Scanning
   scanFolder: (root: string) => ipcRenderer.invoke('scan-folder', root),
@@ -35,6 +36,11 @@ contextBridge.exposeInMainWorld('api', {
   startBackup: (jobSpec: any) => ipcRenderer.invoke('start-backup', jobSpec),
   cancelBackup: (jobId: number) => ipcRenderer.invoke('cancel-backup', jobId),
   computeDiff: (spec: any) => ipcRenderer.invoke('compute-diff', spec),
+  listBackupContents: (backupPath: string) => ipcRenderer.invoke('list-backup-contents', backupPath),
+  getFolderSize: (folderPath: string) => ipcRenderer.invoke('get-folder-size', folderPath),
+  restoreFile: (backupRoot: string, fileRecord: any) => ipcRenderer.invoke('restore-file', { backupRoot, fileRecord }),
+
+
   onBackupProgress: (cb: (p: any) => void) => {
     const l = (_e: any, p: any) => cb(p);
     ipcRenderer.on('backup-progress', l);
@@ -50,6 +56,9 @@ contextBridge.exposeInMainWorld('api', {
 
   // Dialogs
   openFolderDialog: (opts?: any) => ipcRenderer.invoke('open-folder-dialog', opts),
+
+  // Cache
+  clearCache: () => ipcRenderer.invoke('clear-cache'),
 
   // DevTools
   openDevTools: () => ipcRenderer.send('open-devtools')

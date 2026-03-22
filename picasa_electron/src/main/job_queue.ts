@@ -2,8 +2,9 @@
 import { Worker } from 'worker_threads';
 
 export class JobQueue {
-  private queue: Array<any> = [];
-  private running = false;
+  private queue: Array<{ id: number; fn: (progress: any, isCancelled: any) => Promise<any> }> = [];
+  private concurrency = 4;
+  private runningCount = 0;
   private idCounter = 1;
   private cancelMap: Record<number, boolean> = {};
 
@@ -41,10 +42,10 @@ export class JobQueue {
   }
 
   private async runNext() {
-    if (this.running) return;
+    if (this.runningCount >= this.concurrency) return;
     const item = this.queue.shift();
     if (!item) return;
-    this.running = true;
+    this.runningCount++;
     try {
       await item.fn((p: any) => {
         // no-op: in real app we'd forward progress via IPC
@@ -52,7 +53,7 @@ export class JobQueue {
     } catch (err) {
       console.error('Job failed', err);
     }
-    this.running = false;
+    this.runningCount--;
     setImmediate(() => this.runNext());
   }
 }
